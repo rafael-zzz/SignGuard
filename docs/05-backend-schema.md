@@ -41,6 +41,8 @@ class Signal(BaseModel):
 
 class ThreatReport(BaseModel):
     signals: list[Signal]; risk_score: int
+    patterns: list[str] = []   # padrões de golpe recuperados (RAG)
+    evidence: list[str] = []   # o que o agente consultou, inclusive fontes indisponíveis
 
 class PolicyResult(BaseModel):
     allowed: bool; violations: list[str]
@@ -53,6 +55,21 @@ class Verdict(BaseModel):
     reasons: list[str]
     decoded: Decoded; threat: ThreatReport; policy: PolicyResult
     report_hash: str   # keccak256 do JSON canônico
+
+# Forense (mock) — POST /forensic
+class ForensicRequest(BaseModel):
+    tx_hash: str       # 0x + 64 hex
+
+class FundHop(BaseModel):
+    step: int; from_: str = Field(alias="from"); from_label: str
+    to: str; to_label: str; token: str; amount: str
+    tx_hash: str; minutes_after: int
+
+class ForensicReport(BaseModel):
+    tx_hash: str
+    mocked: bool       # True = rota simulada, não lida da blockchain
+    hops: list[FundHop]
+    report_md: str
 ```
 
 ## 3. Estado do LangGraph
@@ -100,8 +117,8 @@ CREATE TABLE blocklist (address TEXT PRIMARY KEY, label TEXT, source TEXT);
 | `decode_calldata` | `(to, data) -> fn, args` | ABIs locais + 4byte |
 | `contract_info` | `(addr) -> age_days, verified, creator` | Etherscan |
 | `check_blocklist` | `(addrs) -> hits` | SQLite |
-| `search_patterns` | `(query) -> docs` | Chroma |
-| `trace_funds` | `(tx_hash) -> hops` | mock/Etherscan |
+| `search_patterns` | `(query) -> docs` | Chroma (em memória) sobre `patterns.json`; sem `chromadb`, tags |
+| `trace_funds` | `(tx_hash) -> hops` | mock (rota derivada do hash) |
 
 ## 7. Contrato
 ```solidity
@@ -123,11 +140,11 @@ signguard/
   docs/        01..06
   backend/
     api/       main.py, models.py, db.py, attest.py, config.py
-    agents/    graph.py, decoder.py, threat.py, policy.py, judge.py, llm.py, prompts.py
-    tools/     decode.py, simulate.py, etherscan.py, rag.py, hashing.py
+    agents/    graph.py, decoder.py, threat.py, policy.py, judge.py, forensic.py, llm.py, prompts.py
+    tools/     decode.py, simulate.py, etherscan.py, rag.py, trace.py, hashing.py
     data/      patterns.json (+ signguard.db gerado)
     demo/      make_fixtures.py, fixtures/*.json, wallet_bot.py
-    tests/     test_scenarios.py
+    tests/     test_scenarios.py, test_agents.py, test_backend.py
   contracts/   src/SignGuardRegistry.sol, test/, script/Deploy.s.sol
   web/         app/, components/, lib/types.ts, lib/api.ts, mocks/mock-data.json
 ```

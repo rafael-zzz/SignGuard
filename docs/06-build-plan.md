@@ -14,20 +14,44 @@
 - [ ] Todos: inscrição individual no AVA + curso (chave da edição Nordeste)
 - [ ] Davi: repo + estrutura de pastas + `.env.example`
 - [ ] Caio: telas Analisar + Resultado com JSON mockado (sem esperar a API)
-- [ ] Dávila: Anvil fork rodando; `simulate_tx` e `decode_calldata` para ERC-20 `approve/transfer`
-- [ ] Dávila: 4 fixtures de demo (03-app-flow)
-- [ ] Rafael: grafo LangGraph com nós stub retornando JSON fixo
+- [x] Dávila: Anvil fork rodando; `simulate_tx` e `decode_calldata` para ERC-20 `approve/transfer`
+- [x] Dávila: 4 fixtures de demo (03-app-flow)
+- [x] Rafael: grafo LangGraph com nós stub retornando JSON fixo — superado: o grafo já roda com os nós reais; resposta fixa para o time vem de `OFFLINE=1` + fixtures.
 - [ ] Davi: `SignGuardRegistry` + teste Foundry + deploy Sepolia
 - [ ] Davi: preencher casos reais no PRD; rascunho do BMC
 
 ## Qui 12/11 — Integração
-- [ ] Rafael: decoder e judge com LLM real + saída estruturada; regras de piso em código
-- [ ] Dávila: `contract_info`, `check_blocklist`, endpoints `/analyze` e `/attest`
-- [ ] Rafael: RAG com 10–20 padrões de golpe (approve phishing, drainer, address poisoning, Bybit/Safe)
+- [ ] Rafael: decoder e judge com LLM real + saída estruturada; regras de piso em código — implementado e testado contra servidor local; **falta rodar com a chave do OpenRouter**.
+- [x] Dávila: `contract_info`, `check_blocklist`, endpoints `/analyze` e `/attest`
+- [x] Rafael: RAG com 10–20 padrões de golpe (approve phishing, drainer, address poisoning, Bybit/Safe) — 16 padrões, busca no Chroma com queda para tags.
 - [ ] Caio: telas ligadas à API + tela Agente-carteira
-- [ ] Dávila + Rafael: `wallet_bot.py` + cenário de prompt injection
-- [ ] Davi: pitch v1 + BMC · Rafael: README (inputs → lógica → outputs) · Caio: slides
+- [x] Dávila + Rafael: `wallet_bot.py` + cenário de prompt injection — integrado e validado ponta a ponta contra a API (pagamento normal permitido, injeção bloqueada).
+- [ ] Davi: pitch v1 + BMC · Rafael: README (inputs → lógica → outputs) ✅ · Caio: slides
 - [ ] **Noite:** ensaio ponta a ponta dos 4 cenários + gravar vídeo de backup
+
+### Entregue — papel A (Agentes), em 11/11
+Verificação: `pytest -q` em `backend/` (116 testes: agentes, backend e os 4 cenários), sem LLM, RPC nem Etherscan.
+
+| Item | Onde | Situação |
+|---|---|---|
+| Grafo `decoder → (threat ∥ policy) → judge` | `agents/graph.py` | ✅ entregue |
+| Decodificador: fatos por código, LLM só reescreve o resumo | `agents/decoder.py` | ✅ entregue |
+| Ameaças: sinais com peso + evidências do que foi consultado | `agents/threat.py` | ✅ entregue |
+| Política determinística (5 regras do schema §4) | `agents/policy.py` | ✅ entregue |
+| Juiz: regras do TRD §4 em código; LLM só sobe o risco | `agents/judge.py` | ✅ entregue |
+| Saída estruturada: schema, 1 nova tentativa, queda para regras | `agents/llm.py`, `agents/prompts.py` | ✅ entregue |
+| Orçamento de 6 s de LLM por análise (TRD §7) | `agents/llm.py` (`LLM_TIMEOUT`) | ✅ entregue |
+| Defesa contra prompt injection (5 itens do TRD §5) | `agents/prompts.py`, `agents/threat.py`, `demo/wallet_bot.py` | ✅ entregue |
+| RAG: 16 padrões, Chroma + embeddings, queda para tags | `tools/rag.py`, `data/patterns.json` | ✅ entregue — embeddings locais por padrão |
+| Agente Forense (mock) + `POST /forensic` | `agents/forensic.py`, `tools/trace.py` | ✅ entregue — rota simulada, `mocked: true` |
+| Bot-carteira integrado ao backend | `demo/wallet_bot.py` | ✅ entregue |
+| Seção "fluxo do agente" do README | `README.md` | ✅ entregue |
+
+Pendente no papel A:
+- **LLM real**: nenhuma chamada foi feita a um modelo do OpenRouter (sem chave no ambiente). Falta validar com `OFFLINE=0`: aceitação do `json_schema`, tempo de resposta dentro dos 6 s e qualidade do texto.
+- **Embeddings neurais** (`RAG_EMBEDDINGS=minilm`): caminho implementado, não executado (exige download de ~80 MB).
+- **Simulação real**: os agentes não foram exercitados contra o Anvil; só com fixtures.
+- **Tela Forense** no front: o endpoint existe, a tela não.
 
 ## Sex 13/11 — Dia do hackathon
 | Horário | Atividade |

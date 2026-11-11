@@ -1,7 +1,10 @@
 """Decodifica calldata de transações EVM. Dono: Dávila.
 Cobre ERC-20 (transfer/approve/transferFrom/increaseAllowance) e Uniswap V2 swapExactETHForTokens.
 Para ampliar: adicione entradas em SELECTORS (seletor -> nome, tipos)."""
+from decimal import Decimal, localcontext
+
 from eth_abi import decode as abi_decode
+from eth_abi.exceptions import DecodingError
 
 from api.config import ETH_USD
 
@@ -31,15 +34,19 @@ SELECTORS = {
 
 def fmt_br(v: float, max_dec: int = 6) -> str:
     """1234.5 -> '1.234,5' (formato brasileiro)."""
-    s = f"{v:,.{max_dec}f}".rstrip("0").rstrip(".")
+    s = f"{v:,.{max_dec}f}"
+    if max_dec:
+        s = s.rstrip("0").rstrip(".")
     return s.replace(",", "_").replace(".", ",").replace("_", ".")
 
 
 def _human(amount: int, decimals: int) -> str:
-    return fmt_br(amount / 10**decimals)
+    with localcontext() as ctx:
+        ctx.prec = 100
+        return fmt_br(Decimal(amount) / Decimal(10)**decimals, max_dec=decimals)
 
 
-def decode_calldata(to: str, data: str, value_wei: str) -> dict:
+def decode_calldata(to: str, data: str, value_wei: str = "0") -> dict:
     to_l = to.lower()
     value = int(value_wei or "0")
     data = (data or "0x").lower()
@@ -61,7 +68,14 @@ def decode_calldata(to: str, data: str, value_wei: str) -> dict:
         return out
 
     name, types = SELECTORS[sel]
-    args = abi_decode(types, bytes.fromhex(data[10:]))
+    try:
+        args = abi_decode(types, bytes.fromhex(data[10:]))
+    except (DecodingError, ValueError, OverflowError):
+        out["function"] = sel
+        return out
+    if name == "swapExactETHForTokens" and len(args[1]) < 2:
+        out["function"] = sel
+        return out
     out["function"] = name
     out["raw_args"] = [a if isinstance(a, (int, str)) else list(a) for a in args]
 

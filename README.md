@@ -26,7 +26,7 @@ flowchart LR
   OUT --> R[(SignGuardRegistry<br/>Sepolia)]
 ```
 1. **Decodificador** — identifica a função (approve, transfer, swap…), valor em USD e mudanças de saldo; simula via `eth_call` (fork da mainnet). O LLM reescreve o resumo em linguagem simples.
-2. **Ameaças** — gera sinais com peso (`BLOCKLISTED`, `UNLIMITED_APPROVAL`, `CONTRACT_NEW`, `UNVERIFIED`, `PROMPT_INJECTION`, …) e busca padrões de golpe conhecidos.
+2. **Ameaças** — gera sinais com peso (`BLOCKLISTED`, `UNLIMITED_APPROVAL`, `CONTRACT_NEW`, `UNVERIFIED`, `PROMPT_INJECTION`, …) e busca padrões de golpe conhecidos (RAG: 16 padrões indexados no Chroma e comparados por embeddings com a mensagem recebida; sem o `chromadb`, a busca cai para tags e palavras-chave).
 3. **Política** — regras do usuário/empresa aplicadas por código, sem LLM.
 4. **Juiz** — calcula o veredito mínimo por regras. O LLM escreve a explicação e pode **aumentar** o risco, nunca diminuir.
 
@@ -46,6 +46,9 @@ Quando algo falha, a análise continua e a decisão fica mais conservadora, nunc
 - LLM lento → decoder e judge dividem um orçamento de 6 s por análise (`LLM_TIMEOUT`); estourou, segue com regras.
 - Etherscan fora ou sem chave → a evidência é marcada como indisponível em `threat.evidence`.
 - Calldata que não dá para decodificar → ação `unknown`, que nunca recebe PERMITIR.
+
+### Forense (mock, fora do veredito)
+`POST /forensic` com `{"tx_hash": "0x…"}` roda um grafo separado (`trace → report`) e devolve `hops[]` e `report_md`: rota dos fundos, endereços envolvidos e texto pronto para a exchange e para o boletim de ocorrência. No MVP a rota é **simulada** a partir do hash (`mocked: true`, e o relatório avisa isso no topo); o rastreio real está no roadmap.
 
 ### Outputs
 `verdict`, `risk_score` (0–100), `explanation_ptbr`, `reasons[]`, evidências de cada agente (`decoded`, `threat.signals[]`, `threat.evidence[]` com o que foi consultado, `threat.patterns[]` do RAG, `policy.violations[]`), `intent_hash` e `report_hash` (usados no atestado on-chain). Esquema completo em [`docs/05-backend-schema.md`](docs/05-backend-schema.md).

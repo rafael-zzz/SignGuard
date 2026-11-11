@@ -1,6 +1,6 @@
 """Agente de Ameaças. Dono: Rafael (tools: Dávila).
 Contrato (TRD §3): entrada `tx`, `decoded`; ferramentas `contract_info`, `check_blocklist`
-(db.blocklist_hits) e `search_patterns`; saída {signals[], risk_score, evidence[]} (+ patterns do RAG).
+(db.check_blocklist) e `search_patterns`; saída {signals[], risk_score, evidence[]} (+ patterns do RAG).
 Tudo aqui é código: sinais objetivos com peso. `evidence` registra o que foi consultado,
 inclusive o que estava indisponível. Pesos ajustáveis em WEIGHTS."""
 import re
@@ -73,7 +73,7 @@ def threat_node(state: dict) -> dict:
     counterparty = d.get("spender") or d.get("recipient")
     addrs = sorted({a.lower() for a in (tx["to"], counterparty) if a})
     try:
-        hits = db.blocklist_hits(addrs)
+        hits = db.check_blocklist(addrs)
         evidence.append(f"blocklist: {len(addrs)} endereço(s) consultado(s), {len(hits)} ocorrência(s)")
         for hit in hits:
             add("BLOCKLISTED", f"{hit['address']} — {hit['label']} (fonte: {hit['source']})")
@@ -96,7 +96,8 @@ def threat_node(state: dict) -> dict:
     elif d.get("simulation_ok") is None:
         evidence.append("simulação: indisponível (OFFLINE ou sem RPC configurado)")
     else:
-        evidence.append("simulação: executa sem reverter")
+        source = sim.get("balance_changes_source")
+        evidence.append("simulação: executa sem reverter" + (f" (mudanças de saldo: {source})" if source else ""))
 
     # 3) Reputação dos contratos envolvidos: quem recebe a permissão e o contrato chamado
     targets: list[str] = []

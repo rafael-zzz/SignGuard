@@ -29,7 +29,7 @@ flowchart LR
 | Simulação | Anvil (`--fork-url` mainnet) + `debug_traceCall` / balance diff | Gratuito, reproduzível offline |
 | Decodificação | ABIs conhecidas (ERC-20, Permit2, Uniswap) + 4byte | Cobre os cenários da demo |
 | Dados on-chain | Etherscan API (idade do contrato, verificado, criador) | Sinais de risco baratos |
-| RAG | MVP: busca por tags em `patterns.json`; upgrade: Chroma + embeddings | Funciona sem dependência; evolui sem mudar a interface |
+| RAG | Chroma + embeddings sobre `patterns.json` (embeddings locais por padrão; MiniLM opcional); sem `chromadb`, busca por tags | Funciona sem dependência; evolui sem mudar a interface |
 | Contrato | Solidity + Foundry, deploy em Sepolia | Atestados auditáveis |
 | Banco | SQLite | Zero setup |
 | Front | **Next.js** (App Router, TypeScript) | Escolha do time; roda com mocks sem backend |
@@ -79,7 +79,7 @@ event Attested(bytes32 indexed txHash, address indexed target, Verdict v, uint8 
 | Atestado (assíncrono) | não bloqueia resposta |
 
 ## 8. Variáveis de ambiente
-`OPENROUTER_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `OFFLINE`, `MAINNET_RPC_URL`, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY`, `ATTESTER_PRIVATE_KEY` (testnet), `REGISTRY_ADDRESS`
+`OPENROUTER_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `OFFLINE`, `MAINNET_RPC_URL`, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY`, `ATTESTER_PRIVATE_KEY` (testnet), `REGISTRY_ADDRESS`, `LLM_TIMEOUT`, `RAG_BACKEND`, `RAG_EMBEDDINGS`
 
 ## 9. Fallbacks para a demo
 - Cache das respostas de Etherscan/simulação dos 4 cenários.

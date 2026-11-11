@@ -23,7 +23,7 @@ class SignGuardState(TypedDict, total=False):
     errors: Annotated[list[str], operator.add]   # falhas tratadas (LLM fora do schema, API fora…)
     # Apoio interno entre nós (não vai para a API)
     offline: dict | None             # dados de fixture (modo demo/offline)
-    simulation: dict                 # decoder -> threat: {ok, detail, attempted}
+    simulation: dict                 # decoder -> threat: {ok, detail, attempted, balance_changes_source}
     contracts: dict                  # threat -> judge: contract_info por endereço
     rag_docs: list[dict]             # threat -> judge: padrões de golpe recuperados
     llm_calls: Annotated[list[Any], operator.add]

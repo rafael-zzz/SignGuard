@@ -2,20 +2,27 @@
 Rodar (de dentro de backend/):  uvicorn api.main:app --reload --port 8000
 Docs interativas: http://localhost:8000/docs"""
 import json
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from agents import llm
+from agents.forensic import investigate
 from agents.graph import analyze
 from . import attest as attest_mod
 from . import db
 from .config import FIXTURES_DIR, OFFLINE
-from .models import AttestRequest, AttestResponse, TxInput, Verdict
+from .models import AttestRequest, AttestResponse, ForensicReport, ForensicRequest, TxInput, Verdict, PolicyInput
 
-app = FastAPI(title="SignGuard API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db.init_db()
+    yield
+
+
+app = FastAPI(title="SignGuard API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-db.init_db()
 
 
 def _fixtures() -> dict[str, dict]:
@@ -28,7 +35,7 @@ def _fixtures() -> dict[str, dict]:
 
 @app.get("/health")
 def health():
-    return {"ok": True, "offline": OFFLINE, "llm": llm.available(), "attest_onchain": attest_mod.configured()}
+    return {"ok": True, "offline": OFFLINE, "llm": llm.available(), "attest_onchain": not OFFLINE and attest_mod.configured()}
 
 
 @app.get("/scenarios")
@@ -45,8 +52,11 @@ def analyze_tx(tx: TxInput, scenario_id: str | None = None):
         fx = _fixtures().get(scenario_id)
         if not fx:
             raise HTTPException(404, "cenário não encontrado")
+        if tx_dict != TxInput.model_validate(fx["tx"]).model_dump(by_alias=True):
+            raise HTTPException(422, "transação difere do cenário solicitado")
         offline = fx.get("offline")
     result = analyze(tx_dict, db.get_policy(tx.owner_id), offline)
+    Verdict.model_validate(result)
     db.save_analysis(result, tx_dict)
     return result
 
@@ -60,8 +70,8 @@ def analyze_scenario(scenario_id: str):
 
 
 @app.get("/analyses")
-def analyses():
-    return db.list_analyses()
+def analyses(limit: int = Query(default=50, ge=1, le=200)):
+    return db.list_analyses(limit)
 
 
 @app.get("/analyses/{analysis_id}")
@@ -78,8 +88,8 @@ def get_policy(owner_id: str):
 
 
 @app.put("/policies/{owner_id}")
-def put_policy(owner_id: str, policy: dict):
-    db.put_policy(owner_id, policy)
+def put_policy(owner_id: str, policy: PolicyInput):
+    db.put_policy(owner_id, policy.model_dump())
     return db.get_policy(owner_id)
 
 
@@ -91,22 +101,15 @@ def attest(req: AttestRequest):
     res, tx = a["result"], a["tx"]
     target = res["decoded"].get("spender") or res["decoded"].get("recipient") or tx["to"]
     try:
-        h, url, mocked = attest_mod.attest_onchain(res, target)
+        h, url, mocked = (None, None, True) if OFFLINE else attest_mod.attest_onchain(res, target)
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(502, f"falha ao registrar on-chain: {e}") from e
-    db.save_attestation(req.analysis_id, 11155111, h)
+        raise HTTPException(502, "falha ao registrar on-chain") from e
+    if not mocked and h:
+        db.save_attestation(req.analysis_id, 11155111, h)
     return AttestResponse(analysis_id=req.analysis_id, onchain_tx=h, explorer_url=url, mocked=mocked)
 
 
-@app.post("/forensic")
-def forensic(body: dict):
-    """Mock do Agente Forense (fora do MVP)."""
-    tx_hash = body.get("tx_hash", "0x…")
-    return {
-        "tx_hash": tx_hash,
-        "report_md": (
-            f"# Relatório forense (demo)\n\n- Transação analisada: `{tx_hash}`\n"
-            "- Rota dos fundos: carteira da vítima → endereço do golpista → mixer/bridge (rastreamento completo no roadmap)\n"
-            "- Próximos passos: acionar a exchange de destino com este relatório e registrar boletim de ocorrência.\n"
-        ),
-    }
+@app.post("/forensic", response_model=ForensicReport, response_model_by_alias=True)
+def forensic(req: ForensicRequest):
+    """Agente Forense (mock): rota simulada dos fundos + texto pronto para exchange e boletim de ocorrência."""
+    return investigate(req.tx_hash)

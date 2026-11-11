@@ -104,7 +104,8 @@ def decoder_node(state: dict) -> dict:
     }
     return {
         "decoded": decoded,
-        "simulation": {"ok": sim["ok"], "detail": sim["detail"], "attempted": attempted},
+        "simulation": {"ok": sim["ok"], "detail": sim["detail"], "attempted": attempted,
+                       "balance_changes_source": sim.get("balance_changes_source")},
         "llm_calls": [("decoder", used_llm)],
         "llm_seconds": llm_seconds,
         "errors": errors,

@@ -48,6 +48,20 @@ export interface Verdict {
 
 export interface Scenario { id: string; label: string; expected: VerdictCode; tx: TxInput }
 
+export interface FundHop {
+  step: number;
+  from: string;
+  from_label: string;
+  to: string;
+  to_label: string;
+  token: string;
+  amount: string;
+  tx_hash: string;
+  minutes_after: number;
+}
+
+export interface ForensicReport { tx_hash: string; mocked: boolean; hops: FundHop[]; report_md: string }
+
 export interface AttestResponse {
   analysis_id: string;
   onchain_tx: string | null;
