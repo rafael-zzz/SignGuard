@@ -1,8 +1,11 @@
 import json
 import sqlite3
+from contextlib import contextmanager
+from copy import deepcopy
+from pathlib import Path
 from datetime import datetime, timezone
 
-from .config import DB_PATH, DATA_DIR
+from .config import DB_PATH
 
 DEFAULT_POLICIES = {
     # Usuário comum: sem allowlist, bloqueia approve ilimitado
@@ -28,11 +31,17 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def conn() -> sqlite3.Connection:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    c = sqlite3.connect(DB_PATH)
+@contextmanager
+def conn():
+    Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
+    c = sqlite3.connect(DB_PATH, timeout=10)
     c.row_factory = sqlite3.Row
-    return c
+    c.execute("PRAGMA foreign_keys = ON")
+    try:
+        with c:
+            yield c
+    finally:
+        c.close()
 
 
 def init_db() -> None:
@@ -67,7 +76,7 @@ def init_db() -> None:
 def get_policy(owner_id: str) -> dict:
     with conn() as c:
         r = c.execute("SELECT policy_json FROM policies WHERE owner_id=?", (owner_id,)).fetchone()
-    return json.loads(r["policy_json"]) if r else DEFAULT_POLICIES["default"]
+    return json.loads(r["policy_json"]) if r else deepcopy(DEFAULT_POLICIES["default"])
 
 
 def put_policy(owner_id: str, policy: dict) -> None:
@@ -91,7 +100,7 @@ def blocklist_hits(addresses: list[str]) -> list[dict]:
 def save_analysis(verdict: dict, tx: dict) -> None:
     with conn() as c:
         c.execute(
-            "INSERT OR REPLACE INTO analyses VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO analyses VALUES (?,?,?,?,?,?,?,?)",
             (
                 verdict["analysis_id"], _now(), tx.get("owner_id", "default"), json.dumps(tx),
                 verdict["verdict"], verdict["risk_score"], json.dumps(verdict), verdict["report_hash"],
@@ -119,3 +128,8 @@ def list_analyses(limit: int = 50) -> list[dict]:
 def save_attestation(analysis_id: str, chain_id: int, tx_hash: str | None) -> None:
     with conn() as c:
         c.execute("INSERT INTO attestations VALUES (?,?,?,?)", (analysis_id, chain_id, tx_hash, _now()))
+
+
+def check_blocklist(addresses: list[str]) -> list[dict]:
+    """Nome público previsto em docs/05; preserva blocklist_hits para os agentes."""
+    return blocklist_hits(addresses)

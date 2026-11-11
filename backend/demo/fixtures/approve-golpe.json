@@ -20,6 +20,7 @@
         "age_days": 0.08,
         "creator": "0x000…"
       }
-    }
+    },
+    "balance_changes": []
   }
 }

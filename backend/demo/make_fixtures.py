@@ -1,7 +1,8 @@
 """Gera os 4 cenários de demo em demo/fixtures/*.json. Dono: Dávila.
 Rodar: python -m demo.make_fixtures  (de dentro de backend/)"""
 import json
-import time
+import argparse
+from pathlib import Path
 
 from eth_abi import encode
 from eth_utils import to_checksum_address
@@ -41,7 +42,7 @@ SCENARIOS = [
         "id": "swap-legitimo", "label": "Swap legítimo", "expected": "ALLOW",
         "tx": {"chain_id": 1, "from": USER, "to": UNI_V2, "value": str(5 * 10**16),
                "data": cd("0x7ff36ab5", ["uint256", "address[]", "address", "uint256"],
-                          [0, [a(WETH), a(USDT)], a(USER), int(time.time()) + 3600]),
+                          [0, [a(WETH), a(USDT)], a(USER), 4102444800]),
                "context": None, "owner_id": "default"},
         "offline": {"simulation_ok": True, "contract_info": {}},
     },
@@ -64,8 +65,28 @@ SCENARIOS = [
     },
 ]
 
+def make_fixtures(output_dir: Path = FIXTURES_DIR) -> None:
+    """Fixtures determinísticas e sintéticas; deadline fixo em 01/01/2100 UTC."""
+    from api.models import TxInput
+    from tools.decode import decode_calldata
+    from tools.simulate import simulate_tx
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for scenario in SCENARIOS:
+        TxInput.model_validate(scenario["tx"])
+        tx = scenario["tx"]
+        decoded = decode_calldata(tx["to"], tx["data"], tx["value"])
+        offline = dict(scenario["offline"])
+        offline["balance_changes"] = simulate_tx(tx, decoded, offline)["balance_changes"]
+        if scenario["id"] == "swap-legitimo":
+            offline["balance_changes"].append({"token": USDT.lower(), "symbol": "USDT", "delta": "149,5"})
+        payload = {**scenario, "offline": offline}
+        (output_dir / f"{scenario['id']}.json").write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print("ok", scenario["id"])
+
+
 if __name__ == "__main__":
-    FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
-    for s in SCENARIOS:
-        (FIXTURES_DIR / f"{s['id']}.json").write_text(json.dumps(s, indent=2, ensure_ascii=False), encoding="utf-8")
-        print("ok", s["id"])
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=FIXTURES_DIR)
+    make_fixtures(parser.parse_args().output_dir)
