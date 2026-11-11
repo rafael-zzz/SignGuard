@@ -30,11 +30,28 @@ flowchart LR
 3. **Política** — regras do usuário/empresa aplicadas por código, sem LLM.
 4. **Juiz** — calcula o veredito mínimo por regras. O LLM escreve a explicação e pode **aumentar** o risco, nunca diminuir.
 
+Regras do Juiz (todas em código, na ordem de severidade):
+
+| Condição | Veredito mínimo |
+|---|---|
+| Qualquer violação de política (limite, allowlist, horário, approve ilimitado, idade mínima do contrato) | 🔴 BLOQUEAR |
+| Endereço em blocklist | 🔴 BLOQUEAR |
+| Approve ilimitado + contrato com menos de 7 dias + código não verificado | 🔴 BLOQUEAR |
+| Simulação falhou ou não foi possível simular | 🟡 ALERTAR |
+| `risk_score` ≥ 40 (soma dos pesos dos sinais; o LLM pode somar até 30) | 🟡 ALERTAR |
+| Nenhuma das anteriores | 🟢 PERMITIR |
+
+Quando algo falha, a análise continua e a decisão fica mais conservadora, nunca mais permissiva:
+- LLM fora do formato → 1 nova tentativa; depois, veredito e explicação só com regras.
+- LLM lento → decoder e judge dividem um orçamento de 6 s por análise (`LLM_TIMEOUT`); estourou, segue com regras.
+- Etherscan fora ou sem chave → a evidência é marcada como indisponível em `threat.evidence`.
+- Calldata que não dá para decodificar → ação `unknown`, que nunca recebe PERMITIR.
+
 ### Outputs
-`verdict`, `risk_score` (0–100), `explanation_ptbr`, `reasons[]`, evidências de cada agente, `intent_hash` e `report_hash` (usados no atestado on-chain). Esquema completo em [`docs/05-backend-schema.md`](docs/05-backend-schema.md).
+`verdict`, `risk_score` (0–100), `explanation_ptbr`, `reasons[]`, evidências de cada agente (`decoded`, `threat.signals[]`, `threat.evidence[]` com o que foi consultado, `threat.patterns[]` do RAG, `policy.violations[]`), `intent_hash` e `report_hash` (usados no atestado on-chain). Esquema completo em [`docs/05-backend-schema.md`](docs/05-backend-schema.md).
 
 ### Defesa contra prompt injection
-Conteúdo externo vai dentro de `<untrusted>`; saída sempre em JSON; política e vetos em código; o SignGuard não tem chave de carteira de usuário; o agente-carteira só assina com `ALLOW`.
+Conteúdo externo vai dentro de `<untrusted>` (e não consegue fechar o bloco); saída sempre em JSON validado por schema; política e vetos em código; texto do LLM que contradiz o veredito é descartado; o SignGuard não tem chave de carteira de usuário; o agente-carteira só assina com `ALLOW`. Mensagem com sinais de manipulação gera o sinal `PROMPT_INJECTION`, que sozinho já impede o PERMITIR.
 
 ## Como rodar
 
@@ -45,7 +62,7 @@ cp .env.example .env            # preencha o que tiver; OFFLINE=1 roda sem nenhu
 cd backend
 pip install -r requirements.txt
 python -m demo.make_fixtures    # gera os 4 cenários
-OFFLINE=1 pytest -q             # os 4 cenários devem passar
+OFFLINE=1 pytest -q             # os 4 cenários e os testes dos agentes devem passar
 uvicorn api.main:app --reload --port 8000    # docs em http://localhost:8000/docs
 
 # Front (outro terminal)

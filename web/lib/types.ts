@@ -29,7 +29,7 @@ export interface Decoded {
 }
 
 export interface Signal { code: string; weight: number; evidence: string }
-export interface ThreatReport { signals: Signal[]; risk_score: number; patterns: string[] }
+export interface ThreatReport { signals: Signal[]; risk_score: number; patterns: string[]; evidence?: string[] }
 export interface PolicyResult { allowed: boolean; violations: string[] }
 
 export interface Verdict {

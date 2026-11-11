@@ -23,7 +23,7 @@ OFFLINE = env("OFFLINE", "0") == "1"
 LLM_API_KEY = env("OPENROUTER_API_KEY")
 LLM_BASE_URL = env("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 LLM_MODEL = env("LLM_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
-LLM_TIMEOUT = float(env("LLM_TIMEOUT", "20"))
+LLM_TIMEOUT = float(env("LLM_TIMEOUT", "6"))        # tempo total de LLM por análise (decoder + judge) — TRD §7
 
 # Blockchain
 MAINNET_RPC_URL = env("MAINNET_RPC_URL")            # ou http://127.0.0.1:8545 (anvil --fork-url ...)

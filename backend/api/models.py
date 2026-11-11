@@ -45,6 +45,7 @@ class ThreatReport(BaseModel):
     signals: list[Signal] = []
     risk_score: int = 0
     patterns: list[str] = []         # padrões de golpe recuperados (RAG)
+    evidence: list[str] = []         # o que o agente consultou (TRD §3), inclusive fontes indisponíveis
 
 
 class PolicyResult(BaseModel):
