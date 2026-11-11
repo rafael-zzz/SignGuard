@@ -1,0 +1,18 @@
+{
+  "id": "endereco-suspeito",
+  "label": "Endereço suspeito",
+  "expected": "BLOCK",
+  "tx": {
+    "chain_id": 1,
+    "from": "0x4E5b2e1dc63F6b91cb6Cd759936495434C7e972F",
+    "to": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "value": "0",
+    "data": "0xa9059cbb000000000000000000000000bad0000000000000000000000000000000c0ffee0000000000000000000000000000000000000000000000000000000011e1a300",
+    "context": "Atendente do 'suporte' no Instagram pediu para mover os fundos para uma carteira segura.",
+    "owner_id": "default"
+  },
+  "offline": {
+    "simulation_ok": true,
+    "contract_info": {}
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "approve-golpe",
+  "label": "Golpe de approve",
+  "expected": "BLOCK",
+  "tx": {
+    "chain_id": 1,
+    "from": "0x4E5b2e1dc63F6b91cb6Cd759936495434C7e972F",
+    "to": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "value": "0",
+    "data": "0x095ea7b30000000000000000000000009f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "context": "Site 'airdrop-usdt-oficial.xyz' pediu para conectar a carteira e liberar o resgate.",
+    "owner_id": "default"
+  },
+  "offline": {
+    "simulation_ok": true,
+    "contract_info": {
+      "0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f": {
+        "is_contract": true,
+        "verified": false,
+        "age_days": 0.08,
+        "creator": "0x000…"
+      }
+    }
+  }
+}
