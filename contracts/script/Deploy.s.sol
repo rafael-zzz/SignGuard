@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {SignGuardRegistry} from "../src/SignGuardRegistry.sol";
 
 /// Deploy na Sepolia (rodar de dentro de contracts/, com o .env da raiz carregado):
-///   source ../.env
+///   set -a && source <(tr -d '\r' < ../.env) && set +a   # exporta as variáveis e remove \r do Windows
 ///   forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast
 ///
 /// - ATTESTER_PRIVATE_KEY (obrigatório, com 0x): paga o deploy e vira owner.
