@@ -13,7 +13,7 @@ from agents import llm
 from agents.graph import analyze
 from . import attest as attest_mod
 from . import db
-from .auth import Owner, require_owner
+from .auth import Owner, require_owner, demo_enabled
 from .config import FIXTURES_DIR, OFFLINE
 from .models import AttestRequest, AttestResponse, TxInput, Verdict, PolicyInput
 
@@ -37,7 +37,7 @@ def _fixtures() -> dict[str, dict]:
 
 @app.get("/health")
 def health():
-    return {"ok": True, "offline": OFFLINE, "llm": llm.available(), "attest_onchain": not OFFLINE and attest_mod.configured()}
+    return {"ok": True, "offline": OFFLINE, "demo_mode": demo_enabled(), "llm": llm.available(), "attest_onchain": not OFFLINE and attest_mod.configured()}
 
 
 @app.get("/scenarios")

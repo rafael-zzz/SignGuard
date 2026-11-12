@@ -1,4 +1,4 @@
-"""Credenciais por proprietário para o MVP; sem bypass implícito no modo offline."""
+"""Bearer por proprietário; acesso anônimo só com SIGNGUARD_DEMO_MODE=1."""
 import json
 import os
 import secrets
@@ -8,6 +8,11 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 bearer = HTTPBearer(auto_error=False)
+
+
+def demo_enabled() -> bool:
+    """OFFLINE e ausência de chaves nunca habilitam acesso anônimo."""
+    return os.getenv("SIGNGUARD_DEMO_MODE", "0") == "1"
 
 
 def configured_keys() -> dict[str, str]:
@@ -23,7 +28,11 @@ def configured_keys() -> dict[str, str]:
         raise HTTPException(503, "configuração de autenticação inválida") from None
 
 
-def current_owner(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> str:
+def current_owner(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> str | None:
+    # None representa a sessão anônima de demonstração, não um owner fictício.
+    # Os filtros de owner no SQLite recebem None somente neste modo explícito.
+    if demo_enabled():
+        return None
     keys = configured_keys()
     if not keys:
         raise HTTPException(503, "autenticação não configurada")
@@ -34,9 +43,9 @@ def current_owner(credentials: Annotated[HTTPAuthorizationCredentials | None, De
     raise HTTPException(401, "credencial ausente ou inválida", headers={"WWW-Authenticate": "Bearer"})
 
 
-Owner = Annotated[str, Depends(current_owner)]
+Owner = Annotated[str | None, Depends(current_owner)]
 
 
-def require_owner(requested: str, authenticated: str) -> None:
-    if requested != authenticated:
+def require_owner(requested: str, authenticated: str | None) -> None:
+    if authenticated is not None and requested != authenticated:
         raise HTTPException(403, "proprietário não autorizado")

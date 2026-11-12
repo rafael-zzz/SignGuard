@@ -9,7 +9,8 @@ from web3.exceptions import TimeExhausted
 from api import attest, db, main
 from test_backend import client
 
-# Requisitos para Davi: continuam executando/falhando na suíte completa.
+# Integração com Davi: execução explícita via -m dependency_davi.
+# Atualizar um atestado é permitido pelo contrato atual; não exigir imutabilidade.
 pytestmark = pytest.mark.dependency_davi
 
 
@@ -96,15 +97,17 @@ def test_receipt_reverted_is_not_saved_as_success(client, chain):
     body = {"analysis_id": chain.result["analysis_id"]}
     assert client.post("/attest", json=body).status_code == 502
     assert job_status() == "failed" and attest_count() == 0
-    assert client.post("/attest", json=body).status_code == 409
     assert chain.w3.eth.send_raw_transaction.call_count == 1
 
 
-def test_existing_registry_record_cannot_be_overwritten(client, chain):
+def test_existing_registry_record_can_be_updated(client, chain):
+    """Atualização explícita é permitida; a API não deve inventar um conflito 409."""
     chain.state["record"] = chain.recorded
-    assert client.post("/attest", json={"analysis_id": chain.result["analysis_id"]}).status_code == 409
-    chain.w3.eth.send_raw_transaction.assert_not_called()
-    assert attest_count() == 0
+    response = client.post("/attest", json={"analysis_id": chain.result["analysis_id"]})
+    assert response.status_code == 200
+    assert response.json()["mocked"] is False
+    chain.w3.eth.send_raw_transaction.assert_called_once()
+    assert attest_count() == 1
 
 
 def test_wrong_chain_or_empty_registry_never_signs(client, chain):
@@ -117,14 +120,20 @@ def test_wrong_chain_or_empty_registry_never_signs(client, chain):
     chain.w3.eth.account.from_key.assert_not_called()
 
 
-def test_different_report_same_intent_conflicts(client, chain):
+def test_different_report_same_intent_can_be_attested(client, chain):
     body = {"analysis_id": chain.result["analysis_id"]}
     assert client.post("/attest", json=body).status_code == 200
     changed = {**chain.result, "analysis_id": "different", "report_hash": "0x" + "ab" * 32}
     saved = db.get_analysis(chain.result["analysis_id"])
     db.save_analysis(changed, saved["tx"])
-    assert client.post("/attest", json={"analysis_id": "different"}).status_code == 409
-    assert chain.w3.eth.send_raw_transaction.call_count == 1
+    response = client.post("/attest", json={"analysis_id": "different"})
+    assert response.status_code == 200
+    assert response.json()["analysis_id"] == "different"
+    assert chain.w3.eth.send_raw_transaction.call_count == 2
+    sent = chain.w3.eth.contract.return_value.functions.attest.call_args.args
+    assert sent[0] == bytes.fromhex(changed["intent_hash"][2:])
+    assert sent[4] == bytes.fromhex(changed["report_hash"][2:])
+    assert attest_count() == 2
 
 
 def test_wrong_receipt_hash_is_not_confirmed(client, chain):
