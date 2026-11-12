@@ -12,19 +12,19 @@
 
 ## Qua 11/11 — Fundação
 - [ ] Todos: inscrição individual no AVA + curso (chave da edição Nordeste)
-- [ ] Davi: repo + estrutura de pastas + `.env.example`
-- [ ] Caio: telas Analisar + Resultado com JSON mockado (sem esperar a API)
+- [x] Davi: repo + estrutura de pastas + `.env.example`
+- [x] Caio: telas Analisar + Resultado com JSON mockado (sem esperar a API)
 - [x] Dávila: Anvil fork rodando; `simulate_tx` e `decode_calldata` para ERC-20 `approve/transfer`
 - [x] Dávila: 4 fixtures de demo (03-app-flow)
-- [ ] Rafael: grafo LangGraph com nós stub retornando JSON fixo
-- [ ] Davi: `SignGuardRegistry` + teste Foundry + deploy Sepolia
+- [x] Rafael: grafo LangGraph com nós stub retornando JSON fixo
+- [x] Davi: `SignGuardRegistry` + teste Foundry + deploy Sepolia ([`0x1652…059B`](https://sepolia.etherscan.io/address/0x1652D6a7bbE1980df629322B5b2D7c3AA902059B#code), atestado testado ponta a ponta)
 - [ ] Davi: preencher casos reais no PRD; rascunho do BMC
 
 ## Qui 12/11 — Integração
-- [ ] Rafael: decoder e judge com LLM real + saída estruturada; regras de piso em código
+- [ ] Rafael: decoder e judge com LLM real + saída estruturada; regras de piso em código. Versão base na `main`; versão do Rafael (`feat/agents`) aguardando PR.
 - [x] Dávila: `contract_info`, `check_blocklist`, endpoints `/analyze` e `/attest`
-- [ ] Rafael: RAG com 10–20 padrões de golpe (approve phishing, drainer, address poisoning, Bybit/Safe)
-- [ ] Caio: telas ligadas à API + tela Agente-carteira
+- [ ] Rafael: RAG com 10–20 padrões de golpe (approve phishing, drainer, address poisoning, Bybit/Safe). A `main` tem 8; `feat/agents` tem 16, aguardando PR.
+- [ ] Caio: telas ligadas à API + tela Agente-carteira. Já funcionam na `main` (análise, atestado e agente); componentes do Caio (PRs #1 e #2) em ajuste.
 - [ ] Dávila + Rafael: `wallet_bot.py` + cenário de prompt injection — parte de Dávila implementada e testada; validação conjunta pendente.
 - [ ] Davi: pitch v1 + BMC · Rafael: README (inputs → lógica → outputs) · Caio: slides
 - [ ] **Noite:** ensaio ponta a ponta dos 4 cenários + gravar vídeo de backup
