@@ -1,4 +1,4 @@
-"""Bearer por proprietário; acesso anônimo só com SIGNGUARD_DEMO_MODE=1."""
+"""Bearer por proprietário; acesso anônimo somente com SIGNGUARD_DEMO_MODE=1."""
 import json
 import os
 import secrets
@@ -11,13 +11,12 @@ bearer = HTTPBearer(auto_error=False)
 
 
 def demo_enabled() -> bool:
-    """OFFLINE e ausência de chaves nunca habilitam acesso anônimo."""
     return os.getenv("SIGNGUARD_DEMO_MODE", "0") == "1"
 
 
 def configured_keys() -> dict[str, str]:
     try:
-        keys = json.loads(os.getenv("SIGNGUARD_API_KEYS", "{}"))
+        keys = json.loads(os.getenv("SIGNGUARD_API_KEYS", "").strip() or "{}")
         if not isinstance(keys, dict) or any(
             not isinstance(owner, str) or not owner or not isinstance(key, str) or len(key) < 32
             for owner, key in keys.items()
@@ -29,8 +28,7 @@ def configured_keys() -> dict[str, str]:
 
 
 def current_owner(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> str | None:
-    # None representa a sessão anônima de demonstração, não um owner fictício.
-    # Os filtros de owner no SQLite recebem None somente neste modo explícito.
+    # None mantém o owner original e libera consultas somente na demo explícita.
     if demo_enabled():
         return None
     keys = configured_keys()

@@ -19,7 +19,7 @@ from test_backend import auth, client  # mesma fixture isolada, sem bypass de au
 
 
 def fixture(name="swap-legitimo"):
-    return json.loads((FIXTURES_DIR / f"{name}.json").read_text())
+    return json.loads((FIXTURES_DIR / f"{name}.json").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize("method,path,body", [
@@ -33,8 +33,8 @@ def test_missing_and_invalid_credentials(client, method, path, body):
         assert client.request(method, path, json=body, headers=headers).status_code == 401
 
 
-def test_auth_not_configured_or_duplicate_key_fails_closed(client, monkeypatch):
-    for config in ("{}", "not-json", '{"default":"short"}',
+def test_malformed_or_duplicate_key_fails_closed(client, monkeypatch):
+    for config in ("not-json", '{"default":"short"}',
                    json.dumps({"a": "x" * 32, "b": "x" * 32})):
         monkeypatch.setenv("SIGNGUARD_API_KEYS", config)
         assert client.get("/analyses").status_code == 503

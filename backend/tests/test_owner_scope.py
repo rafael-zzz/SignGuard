@@ -12,7 +12,7 @@ from test_backend import client
 
 
 def fixture(name="swap-legitimo"):
-    return json.loads((FIXTURES_DIR / f"{name}.json").read_text())
+    return json.loads((FIXTURES_DIR / f"{name}.json").read_text(encoding="utf-8"))
 
 
 def test_api_rejects_other_chains_before_original_decoder(client, monkeypatch):

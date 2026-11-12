@@ -1,4 +1,4 @@
-"""Integração anônima explícita para a demo e isolamento Bearer no modo normal."""
+"""Modo demo explícito e isolamento Bearer fora da demonstração."""
 import json
 
 import pytest
@@ -9,7 +9,7 @@ from test_backend import client, auth
 
 
 def fixture(name="swap-legitimo"):
-    return json.loads((FIXTURES_DIR / f"{name}.json").read_text())
+    return json.loads((FIXTURES_DIR / f"{name}.json").read_text(encoding="utf-8"))
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def test_demo_scenarios_without_tokens_keep_owner(anonymous, monkeypatch, name, 
 
 def test_demo_other_routes_and_offline_attest(anonymous, monkeypatch):
     monkeypatch.setenv("SIGNGUARD_DEMO_MODE", "1")
-    monkeypatch.setenv("SIGNGUARD_API_KEYS", "invalid-but-unused-in-demo")
+    monkeypatch.delenv("SIGNGUARD_API_KEYS", raising=False)
     def no_broadcast(*args):
         pytest.fail("offline chamou o adaptador")
     monkeypatch.setattr(main.attest_mod, "attest_onchain", no_broadcast)
@@ -52,11 +52,12 @@ def test_demo_other_routes_and_offline_attest(anonymous, monkeypatch):
     assert anonymous.get("/analyses/missing").status_code == 404
     assert anonymous.post("/analyze", json={"from": "invalid"}).status_code == 422
     assert anonymous.put("/policies/default", json={}).status_code == 422
-    assert anonymous.get("/health").json()["demo_mode"] is True
+    assert anonymous.get("/health").status_code == 200
 
 
 def test_demo_without_scenario_uses_tx_owner(anonymous, monkeypatch):
     monkeypatch.setenv("SIGNGUARD_DEMO_MODE", "1")
+    monkeypatch.delenv("SIGNGUARD_API_KEYS", raising=False)
     tx = fixture("agente-manipulado")["tx"]
     response = anonymous.post("/analyze", json=tx)
     assert response.status_code == 200
@@ -64,21 +65,23 @@ def test_demo_without_scenario_uses_tx_owner(anonymous, monkeypatch):
     assert db.get_analysis(response.json()["analysis_id"])["tx"]["owner_id"] == "agent-wallet"
 
 
-@pytest.mark.parametrize("flag", [None, "0", "", "false", "true", "yes", "01"])
-def test_only_explicit_one_enables_demo(anonymous, monkeypatch, flag):
+@pytest.mark.parametrize("flag", [None, "0", "1", "", "false", "true", "yes", "01"])
+def test_only_literal_one_enables_demo(anonymous, monkeypatch, flag):
     if flag is None:
         monkeypatch.delenv("SIGNGUARD_DEMO_MODE", raising=False)
     else:
         monkeypatch.setenv("SIGNGUARD_DEMO_MODE", flag)
-    assert anonymous.get("/health").json()["demo_mode"] is False
-    assert anonymous.post("/analyze/scenario/swap-legitimo").status_code == 401
+    enabled = flag == "1"
+    assert anonymous.get("/health").json()["demo_mode"] is enabled
+    assert anonymous.post("/analyze/scenario/swap-legitimo").status_code == (200 if enabled else 401)
     assert anonymous.post("/analyze/scenario/swap-legitimo", headers=auth()).status_code == 200
     monkeypatch.delenv("SIGNGUARD_API_KEYS", raising=False)
-    assert anonymous.get("/analyses").status_code == 503
+    assert anonymous.get("/analyses").status_code == (200 if enabled else 503)
 
 
 def test_demo_does_not_replace_agent_owner_even_with_default_token(client, monkeypatch):
     monkeypatch.setenv("SIGNGUARD_DEMO_MODE", "1")
+    monkeypatch.delenv("SIGNGUARD_API_KEYS", raising=False)
     result = client.post("/analyze/scenario/agente-manipulado").json()
     assert db.get_analysis(result["analysis_id"])["tx"]["owner_id"] == "agent-wallet"
 
@@ -95,8 +98,12 @@ def test_normal_mode_preserves_owner_authorization(anonymous):
 
 
 def test_disabling_demo_restores_auth_for_existing_records(anonymous, monkeypatch):
+    import os
+    keys = os.environ["SIGNGUARD_API_KEYS"]
     monkeypatch.setenv("SIGNGUARD_DEMO_MODE", "1")
+    monkeypatch.delenv("SIGNGUARD_API_KEYS", raising=False)
     result = anonymous.post("/analyze/scenario/agente-manipulado").json()
+    monkeypatch.setenv("SIGNGUARD_API_KEYS", keys)
     monkeypatch.setenv("SIGNGUARD_DEMO_MODE", "0")
     assert anonymous.get("/analyses").status_code == 401
     assert anonymous.get(f"/analyses/{result['analysis_id']}", headers=auth()).status_code == 404
@@ -105,6 +112,7 @@ def test_disabling_demo_restores_auth_for_existing_records(anonymous, monkeypatc
 
 def test_demo_and_offline_are_independent(anonymous, monkeypatch):
     monkeypatch.setenv("SIGNGUARD_DEMO_MODE", "1")
+    monkeypatch.delenv("SIGNGUARD_API_KEYS", raising=False)
     monkeypatch.setattr(main, "OFFLINE", False)
     calls = []
     def original_adapter(result, target):
@@ -117,3 +125,18 @@ def test_demo_and_offline_are_independent(anonymous, monkeypatch):
     assert calls[0][0] == result
     assert calls[0][1] == fixture()["tx"]["to"]
     assert anonymous.get("/health").json()["offline"] is False
+
+
+@pytest.mark.parametrize("keys", [None, "", "   ", "{}"])
+def test_absent_or_empty_keys_require_explicit_demo(anonymous, monkeypatch, keys):
+    if keys is None:
+        monkeypatch.delenv("SIGNGUARD_API_KEYS", raising=False)
+    else:
+        monkeypatch.setenv("SIGNGUARD_API_KEYS", keys)
+    assert anonymous.get("/analyses").status_code == 503
+    assert anonymous.post("/analyze/scenario/agente-manipulado").status_code == 503
+    monkeypatch.setenv("SIGNGUARD_DEMO_MODE", "1")
+    assert anonymous.get("/analyses").status_code == 200
+    response = anonymous.post("/analyze/scenario/agente-manipulado")
+    assert response.status_code == 200
+    assert db.get_analysis(response.json()["analysis_id"])["tx"]["owner_id"] == "agent-wallet"

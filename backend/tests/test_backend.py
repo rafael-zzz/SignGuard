@@ -27,7 +27,7 @@ def client(tmp_path, monkeypatch):
 
 @pytest.fixture
 def tx():
-    return json.loads((FIXTURES_DIR / "endereco-suspeito.json").read_text())["tx"]
+    return json.loads((FIXTURES_DIR / "endereco-suspeito.json").read_text(encoding="utf-8"))["tx"]
 
 
 def test_scenarios_persist_and_history(client):
