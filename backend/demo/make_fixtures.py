@@ -65,6 +65,20 @@ SCENARIOS = [
     },
 ]
 
+# Evidências sintéticas explícitas: nunca usadas como reputação online.
+for scenario in SCENARIOS:
+    scenario["offline"]["contract_info"].setdefault(USDT.lower(), {
+        "is_contract": True, "verified": True, "age_days": 3000, "creator": "demo",
+    })
+    if scenario["id"] == "swap-legitimo":
+        scenario["offline"]["contract_info"][WETH.lower()] = {
+            "is_contract": True, "verified": True, "age_days": 3000, "creator": "demo",
+        }
+        scenario["offline"]["contract_info"][UNI_V2.lower()] = {
+            "is_contract": True, "verified": True, "age_days": 2000, "creator": "demo",
+        }
+
+
 def make_fixtures(output_dir: Path = FIXTURES_DIR) -> None:
     """Fixtures determinísticas e sintéticas; deadline fixo em 01/01/2100 UTC."""
     from api.models import TxInput

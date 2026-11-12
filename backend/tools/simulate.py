@@ -12,10 +12,45 @@ from tools.decode import TOKENS, _human
 from api.config import MAINNET_RPC_URL, OFFLINE
 
 
+def rpc_chain_matches(tx: dict) -> bool:
+    """Sem cache: um endpoint reconfigurado não pode emprestar evidências de outra rede."""
+    if OFFLINE or not MAINNET_RPC_URL or tx.get("chain_id", 1) != 1:
+        return False
+    try:
+        response = httpx.post(MAINNET_RPC_URL, json={
+            "jsonrpc": "2.0", "id": 10, "method": "eth_chainId", "params": [],
+        }, timeout=4)
+        response.raise_for_status()
+        body = response.json()
+        return isinstance(body, dict) and "error" not in body and int(body.get("result", ""), 16) == tx.get("chain_id", 1)
+    except (httpx.HTTPError, ValueError, TypeError):
+        return False
+
+
+def contract_code(address: str, chain_id: int = 1) -> str | None:
+    if not rpc_chain_matches({"chain_id": chain_id}):
+        return None
+    try:
+        response = httpx.post(MAINNET_RPC_URL, json={
+            "jsonrpc": "2.0", "id": 11, "method": "eth_getCode", "params": [address, "latest"],
+        }, timeout=4)
+        response.raise_for_status()
+        body = response.json()
+        code = body.get("result") if isinstance(body, dict) and "error" not in body else None
+        if isinstance(code, str) and code.startswith("0x"):
+            bytes.fromhex(code[2:])
+            return code
+    except (httpx.HTTPError, ValueError):
+        pass
+    return None
+
+
 def eth_call(tx: dict) -> tuple[bool | None, str]:
     """Retorna (ok, detalhe). ok=None quando não foi possível simular."""
     if OFFLINE or not MAINNET_RPC_URL:
         return None, "simulação desligada (OFFLINE ou sem RPC)"
+    if not rpc_chain_matches(tx):
+        return None, "RPC indisponível, rede divergente ou não suportada"
     payload = {
         "jsonrpc": "2.0", "id": 1, "method": "eth_call",
         "params": [{"from": tx["from"], "to": tx["to"], "data": tx.get("data") or "0x",
@@ -42,13 +77,20 @@ def eth_call(tx: dict) -> tuple[bool | None, str]:
         bytes.fromhex(result[2:])
     except ValueError:
         return None, "resultado RPC inválido"
+    data = tx.get("data", "0x").lower()
+    if data[:10] in {"0xa9059cbb", "0x23b872dd", "0x095ea7b3", "0x39509351"} and result == "0x" + "00" * 32:
+        return False, "token retornou false"
+    if data != "0x":
+        code = contract_code(tx["to"], tx.get("chain_id", 1))
+        if code is None or code == "0x":
+            return None, "não foi possível confirmar código no destino do calldata"
     return True, "executa sem reverter"
 
 
 def simulate_tx(tx: dict, decoded: dict | None = None, offline: dict | None = None) -> dict:
     if decoded is None:
         from tools.decode import decode_calldata
-        decoded = decode_calldata(tx["to"], tx.get("data", "0x"), tx.get("value", "0"))
+        decoded = decode_calldata(tx["to"], tx.get("data", "0x"), tx.get("value", "0"), tx.get("chain_id", 1))
     if offline and "simulation_ok" in offline:
         ok, detail = offline["simulation_ok"], "fixture"
     else:
@@ -89,7 +131,7 @@ TRANSFER_TOPIC = "0x" + keccak(text="Transfer(address,address,uint256)").hex()
 
 def trace_call(tx: dict) -> dict | None:
     """callTracer é opcional: RPCs sem debug mantêm o resultado de eth_call."""
-    if OFFLINE or not MAINNET_RPC_URL:
+    if not rpc_chain_matches(tx):
         return None
     try:
         response = httpx.post(MAINNET_RPC_URL, json={

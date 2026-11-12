@@ -590,6 +590,8 @@ def test_endpoint_forensic():
     from api import main
     from api.models import ForensicReport
     with TestClient(main.app) as c:
+        assert c.post("/forensic", json={"tx_hash": HASH}).status_code == 401      # exige credencial (api/auth.py)
+        c.headers["Authorization"] = "Bearer default-test-key-0000000000000000"
         ok = c.post("/forensic", json={"tx_hash": HASH})
         assert ok.status_code == 200
         body = ok.json()

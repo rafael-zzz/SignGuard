@@ -16,6 +16,7 @@ TOKENS = {
     "0xdac17f958d2ee523a2206206994597c13d831ec7": ("USDT", 6, 1.0),
     "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": ("USDC", 6, 1.0),
     "0x6b175474e89094c44da98b954eedeac495271d0f": ("DAI", 18, 1.0),
+    "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": ("WBTC", 8, None),
     "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": ("WETH", 18, ETH_USD),
 }
 
@@ -46,7 +47,7 @@ def _human(amount: int, decimals: int) -> str:
         return fmt_br(Decimal(amount) / Decimal(10)**decimals, max_dec=decimals)
 
 
-def decode_calldata(to: str, data: str, value_wei: str = "0") -> dict:
+def decode_calldata(to: str, data: str, value_wei: str = "0", chain_id: int = 1) -> dict:
     to_l = to.lower()
     value = int(value_wei or "0")
     data = (data or "0x").lower()
@@ -54,9 +55,13 @@ def decode_calldata(to: str, data: str, value_wei: str = "0") -> dict:
                  "spender": None, "recipient": None, "amount": None, "amount_usd": None,
                  "is_unlimited": False, "raw_args": None}
 
+    if chain_id != 1:
+        out["function"] = data[:10] if data != "0x" else None
+        return out
+
     if data in ("0x", ""):
         out.update(action="native_transfer", recipient=to_l, token_symbol="ETH",
-                   amount=_human(value, 18), amount_usd=round(value / 1e18 * ETH_USD, 2))
+                   amount=_human(value, 18), amount_usd=float(Decimal(value) / Decimal(10)**18 * Decimal(str(ETH_USD))))
         return out
 
     sel = data[:10]
@@ -64,7 +69,7 @@ def decode_calldata(to: str, data: str, value_wei: str = "0") -> dict:
         out["function"] = sel
         if value:
             out["amount"], out["token_symbol"] = _human(value, 18), "ETH"
-            out["amount_usd"] = round(value / 1e18 * ETH_USD, 2)
+            out["amount_usd"] = float(Decimal(value) / Decimal(10)**18 * Decimal(str(ETH_USD)))
         return out
 
     name, types = SELECTORS[sel]
@@ -73,32 +78,32 @@ def decode_calldata(to: str, data: str, value_wei: str = "0") -> dict:
     except (DecodingError, ValueError, OverflowError):
         out["function"] = sel
         return out
-    if name == "swapExactETHForTokens" and len(args[1]) < 2:
+    if name == "swapExactETHForTokens" and (len(args[1]) < 2 or to_l not in KNOWN_CONTRACTS):
         out["function"] = sel
         return out
     out["function"] = name
     out["raw_args"] = [a if isinstance(a, (int, str)) else list(a) for a in args]
 
-    sym, dec, price = TOKENS.get(to_l, ("TOKEN?", 18, None))
+    sym, dec, price = TOKENS.get(to_l, ("TOKEN?", None, None))
 
     if name in ("approve", "increaseAllowance"):
         spender, amount = args
         out.update(action="approve", token=to_l, token_symbol=sym, spender=spender.lower(),
                    is_unlimited=amount >= UNLIMITED_THRESHOLD)
-        out["amount"] = "ILIMITADO" if out["is_unlimited"] else _human(amount, dec)
+        out["amount"] = "ILIMITADO" if out["is_unlimited"] else (_human(amount, dec) if dec is not None else None)
         if not out["is_unlimited"] and price is not None:
-            out["amount_usd"] = round(amount / 10**dec * price, 2)
+            out["amount_usd"] = float(Decimal(amount) / Decimal(10)**dec * Decimal(str(price)))
     elif name in ("transfer", "transferFrom"):
         recipient, amount = (args[0], args[1]) if name == "transfer" else (args[1], args[2])
         out.update(action="transfer" if name == "transfer" else "transferFrom", token=to_l,
-                   token_symbol=sym, recipient=recipient.lower(), amount=_human(amount, dec))
+                   token_symbol=sym, recipient=recipient.lower(), amount=_human(amount, dec) if dec is not None else None)
         if price is not None:
-            out["amount_usd"] = round(amount / 10**dec * price, 2)
+            out["amount_usd"] = float(Decimal(amount) / Decimal(10)**dec * Decimal(str(price)))
     elif name == "swapExactETHForTokens":
         _min_out, path, recipient, _deadline = args
         out_sym = TOKENS.get(path[-1].lower(), ("TOKEN?",))[0]
         out.update(action="swap", recipient=recipient.lower(), token_symbol="ETH",
-                   amount=_human(value, 18), amount_usd=round(value / 1e18 * ETH_USD, 2),
+                   amount=_human(value, 18), amount_usd=float(Decimal(value) / Decimal(10)**18 * Decimal(str(ETH_USD))),
                    token=path[-1].lower())
         out["swap_out_symbol"] = out_sym
     return out

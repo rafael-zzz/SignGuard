@@ -29,10 +29,12 @@ contract SignGuardRegistry {
         bytes32 indexed intentHash, address indexed target, Verdict verdict, uint8 riskScore, bytes32 reportHash, address attester
     );
     event AttesterSet(address indexed attester, bool allowed);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     error NotOwner();
     error NotAttester();
     error InvalidScore();
+    error ZeroAddress();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -40,19 +42,38 @@ contract SignGuardRegistry {
     }
 
     constructor(address firstAttester) {
+        if (firstAttester == address(0)) revert ZeroAddress();
         owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
         isAttester[firstAttester] = true;
         emit AttesterSet(firstAttester, true);
     }
 
+    function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert ZeroAddress();
+        emit OwnershipTransferred(owner, newOwner);
+        owner = newOwner;
+    }
+
     function setAttester(address who, bool allowed) external onlyOwner {
+        if (who == address(0)) revert ZeroAddress();
         isAttester[who] = allowed;
         emit AttesterSet(who, allowed);
     }
 
+    /// @notice Registra (ou atualiza) o veredito de uma intenção de transação.
+    /// @dev Reatestar a mesma intenção substitui o registro sem inflar a reputação:
+    ///      os contadores do registro anterior são desfeitos antes de aplicar o novo.
     function attest(bytes32 intentHash_, address target, Verdict verdict, uint8 riskScore, bytes32 reportHash) external {
         if (!isAttester[msg.sender]) revert NotAttester();
         if (riskScore > 100) revert InvalidScore();
+
+        Attestation storage prev = _attestations[intentHash_];
+        if (prev.timestamp != 0) {
+            attestationCount[prev.target] -= 1;
+            if (prev.verdict == Verdict.BLOCK) blockCount[prev.target] -= 1;
+        }
+
         _attestations[intentHash_] = Attestation({
             intentHash: intentHash_,
             target: target,
@@ -75,6 +96,11 @@ contract SignGuardRegistry {
     function isBlocked(bytes32 intentHash_) external view returns (bool) {
         Attestation memory a = _attestations[intentHash_];
         return a.timestamp != 0 && a.verdict == Verdict.BLOCK;
+    }
+
+    /// @notice Reputação pública de um endereço numa chamada só (para front/carteiras).
+    function reputation(address target) external view returns (uint32 attestations, uint32 blocks) {
+        return (attestationCount[target], blockCount[target]);
     }
 
     /// @notice Mesmo cálculo feito no backend (tools/hashing.py).
