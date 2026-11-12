@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div className="container">
           <nav className="nav">
-            <span className="brand">🛡️ SignGuard</span>
+            <span className="brand">SignGuard</span>
             <Link href="/">Analisar</Link>
             <Link href="/agente">Agente-carteira</Link>
           </nav>
