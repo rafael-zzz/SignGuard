@@ -24,7 +24,7 @@
 - [ ] Rafael: decoder e judge com LLM real + saída estruturada; regras de piso em código. Versão base na `main`; versão do Rafael (`feat/agents`) aguardando PR.
 - [x] Dávila: `contract_info`, `check_blocklist`, endpoints `/analyze` e `/attest`
 - [ ] Rafael: RAG com 10–20 padrões de golpe (approve phishing, drainer, address poisoning, Bybit/Safe). A `main` tem 8; `feat/agents` tem 16, aguardando PR.
-- [ ] Caio: telas ligadas à API + tela Agente-carteira. Já funcionam na `main` (análise, atestado e agente); componentes do Caio (PRs #1 e #2) em ajuste.
+- [x] Caio: telas ligadas à API + tela Agente-carteira (PR #1)
 - [ ] Dávila + Rafael: `wallet_bot.py` + cenário de prompt injection — parte de Dávila implementada e testada; validação conjunta pendente.
 - [ ] Davi: pitch v1 + BMC · Rafael: README (inputs → lógica → outputs) · Caio: slides
 - [ ] **Noite:** ensaio ponta a ponta dos 4 cenários + gravar vídeo de backup
