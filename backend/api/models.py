@@ -1,17 +1,44 @@
 """Contrato de dados entre agentes, API e front. Mudou aqui -> avise o time (web/lib/types.ts espelha isto)."""
-from typing import Literal
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Annotated, Literal
+from pydantic import BaseModel, Field, ConfigDict, field_validator
+
+
+Address = Annotated[str, Field(pattern=r"^0x[0-9a-fA-F]{40}$")]
 
 
 class TxInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
-    chain_id: int = 1
-    from_: str = Field(alias="from")
-    to: str
-    data: str = "0x"
-    value: str = "0"                 # wei, em string
+    chain_id: int = Field(default=1, gt=0, lt=2**256, strict=True)
+    from_: Address = Field(alias="from")
+    to: Address
+    data: str = Field(default="0x", pattern=r"^0x(?:[0-9a-fA-F]{2})*$")
+    value: str = Field(default="0", pattern=r"^(0|[1-9][0-9]*)$")                 # wei, em string
     context: str | None = None       # texto livre do usuário/bot -> SEMPRE não confiável
-    owner_id: str = "default"        # de quem é a política aplicada
+    owner_id: str = Field(default="default", min_length=1, max_length=128)        # de quem é a política aplicada
+
+    @field_validator("value")
+    @classmethod
+    def uint256_value(cls, value: str) -> str:
+        if len(value) > 78 or int(value) >= 2**256:
+            raise ValueError("value deve caber em uint256")
+        return value
+
+
+class PolicyInput(BaseModel):
+    """PUT substitui a política completa; campos ausentes não removem vetos."""
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    max_value_usd: float = Field(ge=0)
+    allowlist: list[Address]
+    block_unlimited_approvals: bool = Field(strict=True)
+    allowed_hours: list[Annotated[int, Field(strict=True, ge=0, le=24)]] = Field(min_length=2, max_length=2)
+    min_contract_age_days: int = Field(ge=0, strict=True)
+
+    @field_validator("allowed_hours")
+    @classmethod
+    def valid_hours(cls, hours: list[int]) -> list[int]:
+        if not 0 <= hours[0] < hours[1] <= 24:
+            raise ValueError("horário deve satisfazer 0 <= início < fim <= 24")
+        return hours
 
 
 class BalanceChange(BaseModel):
@@ -37,13 +64,13 @@ class Decoded(BaseModel):
 
 class Signal(BaseModel):
     code: str                        # CONTRACT_NEW, UNVERIFIED, BLOCKLISTED, UNLIMITED_APPROVAL, ...
-    weight: int                      # 0-100
+    weight: int = Field(ge=0, le=100)  # 0-100
     evidence: str
 
 
 class ThreatReport(BaseModel):
     signals: list[Signal] = []
-    risk_score: int = 0
+    risk_score: int = Field(default=0, ge=0, le=100)
     patterns: list[str] = []         # padrões de golpe recuperados (RAG)
 
 
@@ -55,7 +82,7 @@ class PolicyResult(BaseModel):
 class Verdict(BaseModel):
     analysis_id: str
     verdict: Literal["ALLOW", "WARN", "BLOCK"]
-    risk_score: int
+    risk_score: int = Field(ge=0, le=100)
     explanation_ptbr: str
     reasons: list[str]
     decoded: Decoded

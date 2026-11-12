@@ -38,8 +38,10 @@ Conteúdo externo vai dentro de `<untrusted>`; saída sempre em JSON; política 
 
 ## Como rodar
 
+Para executar a demonstração com o frontend atual, configure `SIGNGUARD_DEMO_MODE=1` no ambiente do backend. A API funciona sem autenticação e mantém o `owner_id` original dos cenários. Fora do modo demo, a autenticação Bearer permanece obrigatória: configure `SIGNGUARD_API_KEYS`; sem chaves, as rotas protegidas retornam HTTP 503. Não utilize o modo demo em produção. `OFFLINE=1` controla os serviços externos e não desativa a autenticação.
+
 ```bash
-cp .env.example .env            # preencha o que tiver; OFFLINE=1 roda sem nenhuma chave
+cp .env.example .env            # demo: SIGNGUARD_DEMO_MODE=1; OFFLINE=1 dispensa serviços externos
 
 # Backend
 cd backend

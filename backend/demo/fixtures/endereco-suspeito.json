@@ -13,6 +13,20 @@
   },
   "offline": {
     "simulation_ok": true,
-    "contract_info": {}
+    "contract_info": {
+      "0xdac17f958d2ee523a2206206994597c13d831ec7": {
+        "is_contract": true,
+        "verified": true,
+        "age_days": 3000,
+        "creator": "demo"
+      }
+    },
+    "balance_changes": [
+      {
+        "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        "symbol": "USDT",
+        "delta": "-300"
+      }
+    ]
   }
 }

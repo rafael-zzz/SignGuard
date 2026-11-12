@@ -14,20 +14,21 @@
 - [ ] Todos: inscrição individual no AVA + curso (chave da edição Nordeste)
 - [ ] Davi: repo + estrutura de pastas + `.env.example`
 - [ ] Caio: telas Analisar + Resultado com JSON mockado (sem esperar a API)
-- [ ] Dávila: Anvil fork rodando; `simulate_tx` e `decode_calldata` para ERC-20 `approve/transfer`
-- [ ] Dávila: 4 fixtures de demo (03-app-flow)
+- [x] Dávila: Anvil fork rodando; `simulate_tx` e `decode_calldata` para ERC-20 `approve/transfer`
+- [x] Dávila: 4 fixtures de demo (03-app-flow)
 - [ ] Rafael: grafo LangGraph com nós stub retornando JSON fixo
 - [ ] Davi: `SignGuardRegistry` + teste Foundry + deploy Sepolia
 - [ ] Davi: preencher casos reais no PRD; rascunho do BMC
 
 ## Qui 12/11 — Integração
 - [ ] Rafael: decoder e judge com LLM real + saída estruturada; regras de piso em código
-- [ ] Dávila: `contract_info`, `check_blocklist`, endpoints `/analyze` e `/attest`
+- [x] Dávila: `contract_info`, `check_blocklist`, endpoints `/analyze` e `/attest`
 - [ ] Rafael: RAG com 10–20 padrões de golpe (approve phishing, drainer, address poisoning, Bybit/Safe)
 - [ ] Caio: telas ligadas à API + tela Agente-carteira
-- [ ] Dávila + Rafael: `wallet_bot.py` + cenário de prompt injection
+- [ ] Dávila + Rafael: `wallet_bot.py` + cenário de prompt injection — parte de Dávila implementada e testada; validação conjunta pendente.
 - [ ] Davi: pitch v1 + BMC · Rafael: README (inputs → lógica → outputs) · Caio: slides
 - [ ] **Noite:** ensaio ponta a ponta dos 4 cenários + gravar vídeo de backup
+
 
 ## Sex 13/11 — Dia do hackathon
 | Horário | Atividade |

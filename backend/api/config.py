@@ -1,4 +1,5 @@
 import os
+import math
 from pathlib import Path
 
 try:
@@ -35,5 +36,7 @@ SEPOLIA_EXPLORER = env("SEPOLIA_EXPLORER", "https://sepolia.etherscan.io")
 
 # Preço fixo para a demo (sem oráculo)
 ETH_USD = float(env("ETH_USD", "3000"))
+if not math.isfinite(ETH_USD) or ETH_USD <= 0:
+    raise ValueError("ETH_USD deve ser positivo e finito")
 
 DB_PATH = env("DB_PATH", str(DATA_DIR / "signguard.db"))
