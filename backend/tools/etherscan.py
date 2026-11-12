@@ -47,13 +47,16 @@ def contract_info(address: str, chain_id: int = 1, offline: dict | None = None) 
         if ts:
             try:
                 age = (time.time() - int(ts)) / 86400
-                info["age_days"] = round(age, 2) if age >= 0 else None
+                info["age_days"] = age if age >= 0 else None
             except (ValueError, TypeError):
                 pass
-    elif creation is not None:
-        info["is_contract"] = False
+    if info["is_contract"] is None:
+        from tools.simulate import contract_code
+        code = contract_code(a, chain_id)
+        if code is not None:
+            info["is_contract"] = code != "0x"
     if info["verified"] is None and info["is_contract"] is None:
         info["source"] = "indisponível"
-    if info["source"] != "indisponível":
+    if info["source"] != "indisponível" and info["is_contract"] is not False:
         _cache[key] = (time.monotonic(), dict(info))
     return info

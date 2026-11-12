@@ -39,7 +39,8 @@ def naive_agent(message: str) -> dict:
 
 
 def request_verdict(tx: dict) -> dict:
-    response = httpx.post(f"{API}/analyze", json=tx, timeout=60)
+    response = httpx.post(f"{API}/analyze", json=tx, timeout=60,
+                          headers={"Authorization": "Bearer " + os.getenv("SIGNGUARD_API_TOKEN", "")})
     response.raise_for_status()
     verdict = Verdict.model_validate(response.json())
     from tools.hashing import intent_hash

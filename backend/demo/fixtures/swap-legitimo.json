@@ -13,7 +13,26 @@
   },
   "offline": {
     "simulation_ok": true,
-    "contract_info": {},
+    "contract_info": {
+      "0xdac17f958d2ee523a2206206994597c13d831ec7": {
+        "is_contract": true,
+        "verified": true,
+        "age_days": 3000,
+        "creator": "demo"
+      },
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+        "is_contract": true,
+        "verified": true,
+        "age_days": 3000,
+        "creator": "demo"
+      },
+      "0x7a250d5630b4cf539739df2c5dacb4c659f2488d": {
+        "is_contract": true,
+        "verified": true,
+        "age_days": 2000,
+        "creator": "demo"
+      }
+    },
     "balance_changes": [
       {
         "token": "ETH",

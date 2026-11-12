@@ -64,13 +64,13 @@ class Decoded(BaseModel):
 
 class Signal(BaseModel):
     code: str                        # CONTRACT_NEW, UNVERIFIED, BLOCKLISTED, UNLIMITED_APPROVAL, ...
-    weight: int                      # 0-100
+    weight: int = Field(ge=0, le=100)  # 0-100
     evidence: str
 
 
 class ThreatReport(BaseModel):
     signals: list[Signal] = []
-    risk_score: int = 0
+    risk_score: int = Field(default=0, ge=0, le=100)
     patterns: list[str] = []         # padrões de golpe recuperados (RAG)
 
 
@@ -82,7 +82,7 @@ class PolicyResult(BaseModel):
 class Verdict(BaseModel):
     analysis_id: str
     verdict: Literal["ALLOW", "WARN", "BLOCK"]
-    risk_score: int
+    risk_score: int = Field(ge=0, le=100)
     explanation_ptbr: str
     reasons: list[str]
     decoded: Decoded

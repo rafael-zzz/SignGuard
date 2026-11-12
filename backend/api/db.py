@@ -57,6 +57,12 @@ def init_db() -> None:
               analysis_id TEXT REFERENCES analyses(id), chain_id INTEGER,
               tx_hash_onchain TEXT, created_at TEXT
             );
+            CREATE TABLE IF NOT EXISTS attestation_jobs (
+              chain_id INTEGER, registry TEXT, intent_hash TEXT, analysis_id TEXT REFERENCES analyses(id),
+              report_hash TEXT NOT NULL, tx_hash TEXT, status TEXT NOT NULL, updated_at TEXT,
+              PRIMARY KEY(chain_id, registry, intent_hash)
+            );
+            CREATE INDEX IF NOT EXISTS analyses_owner_created ON analyses(owner_id, created_at);
             CREATE TABLE IF NOT EXISTS policies (owner_id TEXT PRIMARY KEY, policy_json TEXT, updated_at TEXT);
             CREATE TABLE IF NOT EXISTS blocklist (address TEXT PRIMARY KEY, label TEXT, source TEXT);
             """
@@ -108,28 +114,55 @@ def save_analysis(verdict: dict, tx: dict) -> None:
         )
 
 
-def get_analysis(analysis_id: str) -> dict | None:
+def get_analysis(analysis_id: str, owner_id: str | None = None) -> dict | None:
     with conn() as c:
-        r = c.execute("SELECT * FROM analyses WHERE id=?", (analysis_id,)).fetchone()
+        r = c.execute(
+            "SELECT * FROM analyses WHERE id=?" + (" AND owner_id=?" if owner_id is not None else ""),
+            (analysis_id, owner_id) if owner_id is not None else (analysis_id,),
+        ).fetchone()
     if not r:
         return None
     return {"tx": json.loads(r["tx_json"]), "result": json.loads(r["result_json"])}
 
 
-def list_analyses(limit: int = 50) -> list[dict]:
+def list_analyses(limit: int = 50, owner_id: str | None = None) -> list[dict]:
     with conn() as c:
         rows = c.execute(
-            "SELECT id, created_at, owner_id, verdict, risk_score FROM analyses ORDER BY created_at DESC LIMIT ?",
-            (limit,),
+            "SELECT id, created_at, owner_id, verdict, risk_score FROM analyses"
+            + (" WHERE owner_id=?" if owner_id is not None else "")
+            + " ORDER BY created_at DESC LIMIT ?",
+            (owner_id, limit) if owner_id is not None else (limit,),
         ).fetchall()
     return [dict(r) for r in rows]
 
 
 def save_attestation(analysis_id: str, chain_id: int, tx_hash: str | None) -> None:
     with conn() as c:
-        c.execute("INSERT INTO attestations VALUES (?,?,?,?)", (analysis_id, chain_id, tx_hash, _now()))
+        c.execute("BEGIN IMMEDIATE")
+        c.execute("INSERT INTO attestations SELECT ?,?,?,? WHERE NOT EXISTS "
+                  "(SELECT 1 FROM attestations WHERE analysis_id=? AND chain_id=? AND tx_hash_onchain=?)",
+                  (analysis_id, chain_id, tx_hash, _now(), analysis_id, chain_id, tx_hash))
 
 
 def check_blocklist(addresses: list[str]) -> list[dict]:
     """Nome público previsto em docs/05; preserva blocklist_hits para os agentes."""
     return blocklist_hits(addresses)
+
+
+def claim_attestation(result: dict, chain_id: int, registry: str) -> tuple[dict, bool]:
+    with conn() as c:
+        c.execute("BEGIN IMMEDIATE")
+        inserted = c.execute(
+            "INSERT OR IGNORE INTO attestation_jobs VALUES (?,?,?,?,?,NULL,'reserved',?)",
+            (chain_id, registry.lower(), result["intent_hash"], result["analysis_id"], result["report_hash"], _now()),
+        ).rowcount == 1
+        row = c.execute("SELECT * FROM attestation_jobs WHERE chain_id=? AND registry=? AND intent_hash=?",
+                        (chain_id, registry.lower(), result["intent_hash"])).fetchone()
+        return dict(row), inserted
+
+
+def update_attestation_job(result: dict, chain_id: int, registry: str, status: str, tx_hash: str | None = None):
+    with conn() as c:
+        c.execute("UPDATE attestation_jobs SET status=?, tx_hash=COALESCE(?,tx_hash), updated_at=? "
+                  "WHERE chain_id=? AND registry=? AND intent_hash=?",
+                  (status, tx_hash, _now(), chain_id, registry.lower(), result["intent_hash"]))
