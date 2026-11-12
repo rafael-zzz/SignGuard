@@ -38,8 +38,11 @@ export default function Page() {
 
   return (
     <main>
-      <h1>Entenda antes de assinar.</h1>
-      <p className="muted">Cole a transação ou escolha um exemplo. Os agentes explicam o que ela faz e se você deve assinar.</p>
+      <header className="hero">
+        <span className="eyebrow">Proteção antes da assinatura</span>
+        <h1>Entenda antes de <span className="grad">assinar</span>.</h1>
+        <p className="muted">Cole a transação ou escolha um exemplo. Os agentes explicam o que ela faz e se você deve assinar.</p>
+      </header>
 
       <div className="card grid">
         <div className="chips">
@@ -55,7 +58,7 @@ export default function Page() {
           placeholder='{"from":"0x...","to":"0x...","data":"0x...","value":"0","chain_id":1,"owner_id":"default"}'
         />
         <div>
-          <button className="btn" onClick={run} disabled={!raw || loading}>
+          <button className={`btn ${loading ? "loading" : ""}`} onClick={run} disabled={!raw || loading}>
             {loading ? "Analisando…" : "Analisar antes de assinar"}
           </button>
         </div>
