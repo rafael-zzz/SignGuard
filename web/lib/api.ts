@@ -36,10 +36,10 @@ export async function attest(analysisId: string): Promise<AttestResponse> {
 }
 
 export const DEFAULT_POLICY: Policy = {
-  max_value_usd: 500,
+  max_value_usd: 5000,
   allowlist: [],
   block_unlimited_approvals: true,
-  allowed_hours: [8, 22],
+  allowed_hours: [0, 24],
   min_contract_age_days: 7,
 };
 

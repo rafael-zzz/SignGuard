@@ -10,7 +10,11 @@ export default function AttestButton({ analysisId }: { analysisId: string }) {
     setBusy(true);
     try {
       const r = await attest(analysisId);
-      setMsg(r.mocked ? "Atestado simulado (configure o contrato no backend)." : r.explorer_url);
+      setMsg(
+        r.mocked
+          ? "Atestado simulado (configure o contrato no backend)."
+          : r.explorer_url ?? "Atestado enviado, mas sem link do explorer."
+      );
     } catch (e) {
       setMsg(`Erro: ${(e as Error).message}`);
     } finally {
@@ -25,7 +29,12 @@ export default function AttestButton({ analysisId }: { analysisId: string }) {
       </button>
       {msg &&
         (msg.startsWith("http") ? (
-          <p><a href={msg} target="_blank" rel="noopener noreferrer" className="explorer-link">Ver no explorer ↗</a></p>
+          <p>
+            <a href={msg} target="_blank" rel="noopener noreferrer" className="explorer-link">
+              Ver no explorer ↗
+            </a>{" "}
+            <span className="muted small">confirmando na blockchain (~15 s)</span>
+          </p>
         ) : (
           <p className="muted">{msg}</p>
         ))}
