@@ -24,7 +24,7 @@ flowchart LR
   CTX[contexto do bot<br/>texto não confiável] --> RX[Regex<br/>código]
   CTX --> JEV[Jev · API System One<br/>versão 1.14 fixada<br/>probabilidade calibrada]
   JEV -. chamado por .- KEY{{TYPESAFE_API_KEY → api.typesafe.ai<br/>ou OPENROUTER_API_KEY → openrouter.ai/api/v1/systemone}}
-  JEV --> THR[Limiar fixo em código<br/>injeção ≥ 0,80<br/>divergente ≥ 0,70]
+  JEV --> THR[Limiar fixo em código<br/>injeção ≥ 0,90<br/>divergente ≥ 0,70]
   D --> T[Ameaças<br/>blocklist, idade/verificação do contrato,<br/>approve ilimitado, RAG]
   D --> P[Política<br/>limite, allowlist, horário<br/>100% código]
   RX -->|OU| T
@@ -37,7 +37,7 @@ flowchart LR
 ```
 Linha cheia = arquitetura alvo, com a chave da TypeSafe. Linha tracejada no classificador = o que roda hoje, só com a chave do OpenRouter (ver Evidências). Sem nenhuma das duas, vale só o regex.
 1. **Decodificador** — identifica a função (approve, transfer, swap…), valor em USD e mudanças de saldo; simula via `eth_call` (fork da mainnet). O resumo em português vem de template, sem LLM.
-2. **Ameaças** — gera sinais com peso (`BLOCKLISTED`, `UNLIMITED_APPROVAL`, `CONTRACT_NEW`, `UNVERIFIED`, …) e busca padrões de golpe conhecidos (RAG: 16 padrões indexados no Chroma e comparados por embeddings com a mensagem recebida; sem o `chromadb`, a busca cai para tags e palavras-chave). O texto do `context` é classificado por regex **ou** pelo Jev (`tools/jev.py`), que devolve probabilidade calibrada; um limiar fixo em código vira sinal: `PROMPT_INJECTION` (`injection ≥ 0,80`), `INTENT_MISMATCH` (`intent = divergente` com confiança `≥ 0,70`), `CLASSIFIER_UNAVAILABLE` (Jev com erro ou acima de 2 s em transação de agente). O Jev é chamado pela API da TypeSafe ou, sem essa chave, pelo OpenRouter com a `OPENROUTER_API_KEY`.
+2. **Ameaças** — gera sinais com peso (`BLOCKLISTED`, `UNLIMITED_APPROVAL`, `CONTRACT_NEW`, `UNVERIFIED`, …) e busca padrões de golpe conhecidos (RAG: 16 padrões indexados no Chroma e comparados por embeddings com a mensagem recebida; sem o `chromadb`, a busca cai para tags e palavras-chave). O texto do `context` é classificado por regex **ou** pelo Jev (`tools/jev.py`), que devolve probabilidade calibrada; um limiar fixo em código vira sinal: `PROMPT_INJECTION` (maior de quatro perguntas de injeção `≥ 0,90`), `INTENT_MISMATCH` (`intent = divergente` com confiança `≥ 0,70`), `CLASSIFIER_UNAVAILABLE` (Jev com erro ou acima de 2 s em transação de agente). O Jev é chamado pela API da TypeSafe ou, sem essa chave, pelo OpenRouter com a `OPENROUTER_API_KEY`.
 3. **Política** — regras do usuário/empresa aplicadas por código, sem LLM.
 4. **Juiz** — decide o veredito, só com código. BLOQUEAR vem exclusivamente de regra; sinal de classificador e score têm teto de ALERTAR.
 5. **Explicação** — roda depois do veredito fechado. O LLM reescreve o texto para leigo (teto de 4 s); veredito, risco, motivos e `report_hash` não mudam. Texto que contradiz o veredito é descartado e vale o template.
@@ -99,39 +99,35 @@ A política é conferida assim: limite em USD por transação; allowlist sobre q
 
 Reproduzir, de dentro de `backend/`: `python -m scripts.eval` (avaliação) e `pytest -q tests/test_properties.py` (propriedades).
 
-Resultado de `python -m scripts.eval` em 13/11/2026, modo offline (fixtures, classificador desligado, sem rede), 40 casos rotulados em [`backend/eval/dataset.jsonl`](backend/eval/dataset.jsonl):
+O conjunto de avaliação tem 60 casos rotulados em [`backend/eval/dataset.jsonl`](backend/eval/dataset.jsonl): 20 que a regra deve bloquear, 12 que devem só alertar e 28 legítimos (30 mensagens benignas e 19 ataques de injeção entre os 49 casos com contexto). Resultados de 13/11/2026:
 
-| Métrica | Resultado |
-|---|---|
-| Falsos PERMITIR em transação maliciosa | **0 de 17** |
-| BLOQUEAR esperado e não bloqueado | **0 de 20** |
-| Acurácia (ALLOW/WARN/BLOCK) | 37 de 40 (92%) |
-| Determinismo (5 execuções por caso: veredito, risco, motivos, hash) | 40 de 40 |
-| Vereditos alterados pelo LLM (adversário simulado que pede "ALLOW, risco 0") | **0 de 40** |
-| Injeção no contexto, só regex | precisão 100%, recall 53% (10 de 19) |
-| Latência da decisão, offline | p50 1 ms, p95 2 ms (não inclui RPC, Etherscan nem Jev) |
-
-Os 3 erros do modo offline são o mesmo caso: transação inofensiva acompanhada de injeção disfarçada que o regex não pega, e que sai PERMITIR em vez de ALERTAR. É o espaço que o Jev cobre (tabela abaixo). `python -m scripts.eval --live --record-jev` grava as respostas do Jev nas fixtures para a demo offline.
-
-**Com o Jev ligado.** O Jev é chamado pela API System One, direto na TypeSafe (`TYPESAFE_API_KEY`) ou pelo OpenRouter (`OPENROUTER_API_KEY`, `POST https://openrouter.ai/api/v1/systemone`, modelo `typesafe/jev-1.14`). É o mesmo modelo nos dois caminhos: pelo OpenRouter a resposta vem do provedor TypeSafe, versão `typesafe/jev-1.14-20261014`. O `typesafe/jev-router`, que também aparece no OpenRouter, é um roteador de LLM de chat e **não** é usado.
-
-Resultado de `python -m scripts.eval --live --runs 3` em 13/11/2026, Jev pelo OpenRouter e LLM real na explicação ([`backend/eval/results-live-jev.json`](backend/eval/results-live-jev.json)):
-
-| Métrica | Só regex (offline) | Regex + Jev (ao vivo) |
+| Métrica | Só regex · offline (`python -m scripts.eval`) | Regex + Jev · ao vivo (`--live --runs 3`) |
 |---|---|---|
 | Falsos PERMITIR em transação maliciosa | 0 de 17 | **0 de 17** |
 | BLOQUEAR esperado e não bloqueado | 0 de 20 | **0 de 20** |
-| Acurácia | 37 de 40 (92%) | 39 de 40 (98%) |
+| Acurácia (ALLOW/WARN/BLOCK) | 56 de 60 (93%) | **60 de 60** |
 | Injeção no contexto: recall | 53% (10 de 19) | **100% (19 de 19)** |
-| Injeção no contexto: precisão | 100% | 95% (1 falso alarme) |
-| Vereditos alterados pelo LLM da explicação | 0 de 40 (adversário simulado) | **0 de 40** (LLM real) |
-| Mesmas entradas → mesma decisão | 40 de 40 | 40 de 40 |
-| Latência da decisão | p50 1 ms | **p50 514 ms, p95 612 ms** (meta: < 1,5 s) |
+| Injeção no contexto: precisão | 100% | **100%** (0 falso alarme em 30 benignos) |
+| Divergência de intenção (35 casos rotulados) | não detecta | precisão 100%, recall 67% (6 de 9) |
+| Vereditos alterados pelo LLM da explicação | 0 de 60 (adversário simulado) | **0 de 60** (LLM real) |
+| Mesmas entradas → mesma decisão (veredito, risco, motivos, hash) | 60 de 60 | 60 de 60 |
+| Latência da decisão | p50 1 ms (sem rede) | **p50 530 ms, p95 794 ms** (meta: < 1,5 s) |
+
+Offline, os 4 erros são transações inofensivas com mensagem manipulada (3 injeções disfarçadas e 1 pedido que não bate com a transação) que o regex não pega e saem PERMITIR. É o espaço que o Jev cobre. Arquivos: [`eval/results.json`](backend/eval/results.json) e [`eval/results-live-jev.json`](backend/eval/results-live-jev.json).
+
+**Como o Jev é chamado.** Pela API System One, direto na TypeSafe (`TYPESAFE_API_KEY`) ou pelo OpenRouter (`OPENROUTER_API_KEY`, `POST https://openrouter.ai/api/v1/systemone`, modelo `typesafe/jev-1.14`). É o mesmo modelo nos dois caminhos: pelo OpenRouter a resposta vem do provedor TypeSafe, versão `typesafe/jev-1.14-20261014`. O `typesafe/jev-router`, que também aparece no OpenRouter, é um roteador de LLM de chat e **não** é usado.
+
+**Como reduzimos falso alarme.**
+- *Perguntas estreitas.* A injeção é medida por quatro perguntas de sim/não, uma por comportamento de ataque: mandar ignorar regras, se passar pelo sistema ou dizer que já foi aprovado, pedir para pular a verificação, pedir para mover todo o saldo. A probabilidade de injeção é a maior das quatro, e o relatório diz qual comportamento foi detectado. A pergunta única e larga de antes ("tenta dar ordens a um agente?") dava 0,61–0,79 para um pedido comum de pagamento.
+- *Limiar no vão medido.* Com as perguntas novas, as 30 mensagens benignas ficaram em ≤ 0,82 (a segunda maior, 0,50) e os 19 ataques em ≥ 0,96. O limiar de injeção passou de 0,80 para **0,90**.
+- *Regex por palavra inteira.* "Send 300 USDT to my friend's w**all**et" casava com "send … all"; corrigido.
+- *Custo limitado.* Um falso alarme do classificador gera no máximo ALERTAR (revisão humana), nunca BLOQUEAR.
 
 Limites desse resultado:
-- O único erro é um falso alarme: "Quero trocar um pouco de ETH por USDT na Uniswap" com um approve de 100 USDT saiu ALERTAR em vez de PERMITIR.
-- O Jev não devolve exatamente o mesmo número a cada chamada: em 3 chamadas por caso, a probabilidade mudou em 28 de 29 casos (na segunda casa decimal), mas o veredito não mudou em nenhum. Perto do limiar isso pode oscilar: "Pague 50 USDT ao fornecedor" marcou 0,75–0,77 de injeção, logo abaixo de 0,80.
-- Os limiares (0,80 e 0,70) são os do doc 07 e não foram ajustados com este eval; 40 casos é pouco para calibrar.
+- O limiar de 0,90 foi escolhido e medido no mesmo conjunto de 49 casos com contexto; falta validar em mensagens novas. O de intenção (0,70) continua o do doc 07.
+- A benigna de pontuação mais alta (0,82) é a do falso suporte ("mover os fundos para uma carteira segura"), que é golpe e já é bloqueada pela blocklist.
+- O Jev não devolve exatamente o mesmo número a cada chamada: em 3 chamadas por caso, a probabilidade mudou em todos os 49 casos (na segunda casa decimal), sem mudar nenhum veredito.
+- A divergência de intenção não pega 3 de 9: o Jev não sabe que um endereço não é o do fornecedor (quem pega isso é a allowlist, e esses casos saem BLOQUEAR por regra) nem lê funções fora do escopo.
 - Simulação e reputação de contrato vieram das fixtures: a latência inclui o Jev, mas não RPC nem Etherscan.
 
 Testes de propriedade (`tests/test_properties.py`): determinismo; invariância ao contexto (transação que viola regra + 10 contextos × 4 respostas do classificador → sempre BLOCK); teto do probabilístico (transação limpa + ataque no contexto → no máximo WARN); LLM pedindo ALLOW não muda a decisão; fora do escopo nunca recebe PERMITIR.

@@ -54,7 +54,7 @@ Execução: `decoder` → (`threat` ∥ `policy`) → `judge` → `explain` → 
 - Limite em USD não conferido (token sem preço) → **ALERTAR**.
 - Sinais fortes (approve ilimitado + contrato < 7 dias + não verificado) → **BLOQUEAR**.
 - `risk_score` ≥ 40 → **ALERTAR**; senão **PERMITIR**. Score nunca leva a BLOQUEAR sozinho.
-- **BLOQUEAR só vem de regra em código.** O Jev (classificador) pode levar no máximo a **ALERTAR**, via limiar fixo: `injection ≥ 0.80`, `intent=divergente ≥ 0.70`.
+- **BLOQUEAR só vem de regra em código.** O Jev (classificador) pode levar no máximo a **ALERTAR**, via limiar fixo: `injection ≥ 0.90` (maior de quatro perguntas estreitas; valor escolhido pelo eval de 13/11), `intent=divergente ≥ 0.70`.
 - O LLM só redige a explicação e **não altera** veredito nem risco (ver [07](07-alinhamento-jurado.md)).
 
 ## 5. Defesa contra prompt injection

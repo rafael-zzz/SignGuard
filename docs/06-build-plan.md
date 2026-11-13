@@ -80,11 +80,11 @@ Detalhes, motivos e código de referência em **[07-alinhamento-jurado.md](07-al
 - [x] Rafael: `decoder.py` — remover a chamada de LLM (fica o template)
 - [x] Dávila: `timings_ms` por nó + campo no `Verdict` (+ `latency_ms` no `/health`)
 - [x] Dávila: testes de propriedade (determinismo, invariância ao contexto, teto do probabilístico, LLM não rebaixa) — `tests/test_properties.py`
-- [x] Dávila: `backend/eval/dataset.jsonl` (40 casos) + `backend/scripts/eval.py` (matriz, falso-PERMITIR = 0, p50/p95) — rodar com `python -m scripts.eval`
+- [x] Dávila: `backend/eval/dataset.jsonl` (60 casos) + `backend/scripts/eval.py` (matriz, falso-PERMITIR = 0, p50/p95) — rodar com `python -m scripts.eval`
 - [x] Davi: README — envelope de garantia + "o que não garantimos" + números do eval offline
 - [ ] Davi: slides "o probabilístico só filtra, o determinístico decide" + evidências (números do eval)
-- [x] Rafael (P1): `tools/jev.py` + sinais `PROMPT_INJECTION` / `INTENT_MISMATCH` / `CLASSIFIER_UNAVAILABLE` (teto ALERTAR) — testado com respostas simuladas; Jev real chamado pelo OpenRouter (`/api/v1/systemone`, modelo `typesafe/jev-1.14`) com a `OPENROUTER_API_KEY`; eval ao vivo: recall de injeção 100%, decisão p50 514 ms
-- [ ] Dávila (P1): gravar respostas do Jev em `offline.jev` nas fixtures (`python -m scripts.eval --live --record-jev`) e fixar os limiares — eval com o Jev já rodou (`eval/results-live-jev.json`); gravação e ajuste de limiar pendentes
+- [x] Rafael (P1): `tools/jev.py` + sinais `PROMPT_INJECTION` / `INTENT_MISMATCH` / `CLASSIFIER_UNAVAILABLE` (teto ALERTAR) — testado com respostas simuladas; Jev real chamado pelo OpenRouter (`/api/v1/systemone`, modelo `typesafe/jev-1.14`) com a `OPENROUTER_API_KEY`; eval ao vivo (60 casos): 60/60, recall e precisão de injeção 100%, decisão p50 530 ms
+- [ ] Dávila (P1): gravar respostas do Jev em `offline.jev` nas fixtures (`python -m scripts.eval --live --record-jev`) — pendente. Eval com o Jev rodou (`eval/results-live-jev.json`) e o limiar de injeção foi fixado em 0,90
 - [x] Davi (P1): UI com selo REGRA / CLASSIFICADOR por motivo + tempo da análise
 
 | Horário | Atividade |

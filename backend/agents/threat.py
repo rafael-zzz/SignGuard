@@ -40,7 +40,7 @@ INJECTION_HINTS = re.compile(
     r"(instruc|instruct|regra|rule|anterior|previous|prior|acima|above|politica|policy)"
     r"|system prompt|prompt de sistema|modo desenvolvedor|developer mode|jailbreak"
     r"|voce agora e|you are now|a partir de agora voce|from now on you"
-    r"|(transfira|transferir|envie|enviar|mande|send|transfer)\b.{0,30}(todo|toda|tudo|saldo|all|entire|everything|balance)"
+    r"|(transfira|transferir|envie|enviar|mande|send|transfer)\b.{0,30}\b(todo|toda|tudo|saldo|all|entire|everything|balance)\b"
     r"|(mude|altere|troque|change)\b.{0,20}(veredito|verdict)"
     r"|(responda|retorne|devolva|return|answer)\b.{0,20}(allow|permitir)"
     r"|(sem|nao|without|don't|do not)\b.{0,25}(consultar|chamar|verificar|checar|check|call)\b.{0,15}signguard"
@@ -88,7 +88,7 @@ def classify_context(tx: dict, acao_real: str, offline: dict) -> tuple[dict | No
     out = jev.classify(context, acao_real, offline)
     classifier = {"provider": jev.backend() or "typesafe", "model": jev.model_name(), "status": "off", "calibrated": True,
                   "thresholds": {"injection": jev.INJECTION_T, "intent": jev.INTENT_T},
-                  "injection_p": None, "intent": None, "intent_confidence": None,
+                  "injection_p": None, "injection_scores": None, "intent": None, "intent_confidence": None,
                   "intent_probabilities": None, "error": None}
     latency = None
     if out is None:
@@ -100,7 +100,8 @@ def classify_context(tx: dict, acao_real: str, offline: dict) -> tuple[dict | No
     else:
         latency = out.get("latency_ms")
         classifier.update(status="ok", provider=out["provider"], calibrated=out["calibrated"],
-                          model=out["model"], injection_p=out["injection_p"], intent=out["intent"],
+                          model=out["model"], injection_p=out["injection_p"],
+                          injection_scores=out["injection_scores"] or None, intent=out["intent"],
                           intent_confidence=out["intent_confidence"], intent_probabilities=out["intent_probabilities"])
         evidence.append(f"classificador Jev ({out['model']}, via {out['provider']}): injeção p={_p(out['injection_p'])} "
                         f"(limiar {_p(jev.INJECTION_T)}); intenção {out['intent']} "
@@ -112,7 +113,12 @@ def classify_context(tx: dict, acao_real: str, offline: dict) -> tuple[dict | No
         inj_ev.append(f"o contexto contém instruções típicas de manipulação de agente: “{snippet}”")
         inj_src.append("rule")
     if ok and classifier["injection_p"] >= jev.INJECTION_T:
-        inj_ev.append(f"classificador: probabilidade de injeção {_p(classifier['injection_p'])} ≥ {_p(jev.INJECTION_T)}")
+        scores = classifier["injection_scores"] or {}
+        which = max(scores, key=scores.get) if scores else None
+        label = {"override": "manda ignorar ou mudar regras", "impersonation": "se passa pelo sistema ou diz que já foi aprovado",
+                 "bypass": "pede para pular a verificação", "drain": "pede para mover todo o saldo"}.get(which)
+        inj_ev.append(f"classificador: probabilidade de injeção {_p(classifier['injection_p'])} ≥ {_p(jev.INJECTION_T)}"
+                      + (f" ({label})" if label else ""))
         inj_src.append("classifier")
     if inj_src:
         signal("PROMPT_INJECTION", inj_ev, inj_src, classifier["injection_p"] if ok else None)

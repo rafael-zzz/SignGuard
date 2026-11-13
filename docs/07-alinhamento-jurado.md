@@ -110,7 +110,7 @@ Resposta usada: `answers.injection.noul` (probabilidade de 0 a 1) e `answers.int
 | `intent.choice == "divergente"` e `confidence ≥ 0.70` | `INTENT_MISMATCH` | piso ALERTAR |
 | Jev com erro ou timeout (> 2 s) e `source=agent` | `CLASSIFIER_UNAVAILABLE` | piso ALERTAR (fail-closed) |
 
-- Os limiares ficam em constantes e são escolhidos pelo eval (§6), não no olho.
+- Os limiares ficam em constantes e são escolhidos pelo eval (§6), não no olho. **Atualização (13/11, após o eval ao vivo):** a pergunta `injection` virou quatro perguntas estreitas (`override`, `impersonation`, `bypass`, `drain`; vale a maior) e o limiar de injeção passou de 0,80 para **0,90**. Motivo e números no README, seção Evidências.
 - Regex e Jev entram com **OU**. O Jev aumenta a cobertura e não substitui a regra.
 - As probabilidades brutas vão para `threat.classifier` e aparecem na tela e no relatório atestado.
 
