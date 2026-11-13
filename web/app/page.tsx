@@ -1,7 +1,10 @@
 "use client";
-// Tela Analisar (04-design-brief). Dono: Caio.
+// Tela Analisar (04-design-brief + design-system.md). Dono: Caio.
 import { useEffect, useState } from "react";
+import ExampleButtons from "@/components/ExampleButtons";
+import TxForm from "@/components/TxForm";
 import VerdictCard from "@/components/VerdictCard";
+import { GrainHero, Overline, Sheet } from "@/components/ui";
 import { analyzeScenario, analyzeTx, getScenarios } from "@/lib/api";
 import type { Scenario, TxInput, Verdict } from "@/lib/types";
 
@@ -38,34 +41,24 @@ export default function Page() {
 
   return (
     <main>
-      <header className="hero">
-        <span className="eyebrow">Proteção antes da assinatura</span>
-        <h1>Entenda antes de <span className="grad">assinar</span>.</h1>
-        <p className="muted">Cole a transação ou escolha um exemplo. Os agentes explicam o que ela faz e se você deve assinar.</p>
+      <header className="relative pb-10 pt-6 sm:pb-14 sm:pt-10">
+        <GrainHero className="absolute -right-12 top-0 hidden h-full w-[50%] opacity-70 lg:block" />
+        <div className="relative max-w-md">
+          <p className="mb-3 text-overline font-semibold uppercase text-on-dark-muted">Proteção antes da assinatura</p>
+          <h1 className="font-serif text-display sm:text-[52px] sm:leading-[56px]">Entenda antes de assinar.</h1>
+          <p className="mt-4 text-body text-on-dark-muted">
+            Cole a transação ou escolha um exemplo. Os agentes explicam o que ela faz e se você deve assinar.
+          </p>
+        </div>
       </header>
 
-      <div className="card grid">
-        <div className="chips">
-          {scenarios.map((s) => (
-            <button key={s.id} className={`btn ${selected === s.id ? "" : "btn-ghost"}`} onClick={() => pick(s)}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-        <textarea
-          value={raw}
-          onChange={(e) => setRaw(e.target.value)}
-          placeholder='{"from":"0x...","to":"0x...","data":"0x...","value":"0","chain_id":1,"owner_id":"default"}'
-        />
-        <div>
-          <button className={`btn ${loading ? "loading" : ""}`} onClick={run} disabled={!raw || loading}>
-            {loading ? "Analisando…" : "Analisar antes de assinar"}
-          </button>
-        </div>
-        {error && <p style={{ color: "var(--block)" }}>{error}</p>}
-      </div>
-
-      {result && <VerdictCard v={result} />}
+      <Sheet title="Nova análise" action={<span />} className="-mx-4 min-h-[60vh] sm:mx-0">
+        <Overline>Exemplos</Overline>
+        <ExampleButtons scenarios={scenarios} selected={selected} onPick={pick} />
+        <Overline className="mt-6">Transação</Overline>
+        <TxForm value={raw} onChange={setRaw} onSubmit={run} loading={loading} error={error} />
+        {result && <VerdictCard v={result} />}
+      </Sheet>
     </main>
   );
 }
