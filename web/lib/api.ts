@@ -86,6 +86,8 @@ export async function getForensic(txHash: string): Promise<ForensicReport> {
   if (USE_MOCKS) {
     return {
       tx_hash: txHash,
+      mocked: true,
+      hops: [],
       report_md: `# Relatório forense (demo)\n\n**Hash:** ${txHash}\n\n1. Fundos saíram da carteira da vítima.\n2. Passaram por 2 endereços intermediários.\n3. Chegaram a uma exchange.\n\n_Texto pronto para a exchange/BO: solicito o bloqueio dos fundos acima._`,
     };
   }

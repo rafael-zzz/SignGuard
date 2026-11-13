@@ -11,7 +11,7 @@
 | GET | `/analyses` | Histórico |
 | GET/PUT | `/policies/{owner}` | Lê/atualiza política |
 | POST | `/forensic` | Relatório pós-incidente (mock) |
-| GET | `/health` | Status |
+| GET | `/health` | Status, classificador (`classifier.enabled`) e `latency_ms` da decisão (última, p50, p95) |
 
 ## 2. Modelos (Pydantic)
 ```python
@@ -23,6 +23,7 @@ class TxInput(BaseModel):
     value: str = "0"          # wei, string
     context: str | None = None  # texto livre do usuário/bot -> SEMPRE não confiável
     owner_id: str = "default"
+    source: Literal["user","agent"] = "user"   # "agent": com contexto e Jev fora -> ALERTAR (fail-closed)
 
 class BalanceChange(BaseModel):
     token: str; symbol: str; delta: str
@@ -35,24 +36,63 @@ class Decoded(BaseModel):
     summary_ptbr: str
 
 class Signal(BaseModel):
-    code: str        # ex: CONTRACT_NEW, UNVERIFIED, BLOCKLISTED, UNLIMITED_APPROVAL
+    code: str        # ex: CONTRACT_NEW, UNVERIFIED, BLOCKLISTED, UNLIMITED_APPROVAL,
+                     #     PROMPT_INJECTION, INTENT_MISMATCH, CLASSIFIER_UNAVAILABLE
     weight: int      # 0-100
     evidence: str    # url ou dado
+    sources: list[Literal["rule","classifier"]] = ["rule"]   # determinístico e/ou probabilístico
+    probability: float | None = None                          # só em sinal de classificador
+
+class Classifier(BaseModel):   # o que o Jev viu; entra no report_hash (docs/07 §6.4)
+    provider: str              # "jev"
+    model: str                 # versão fixada: jev-1.14.0
+    status: Literal["ok","off","error"]   # off = sem chave/OFFLINE (só regex)
+    thresholds: dict[str, float]          # {"injection": 0.80, "intent": 0.70}
+    injection_p: float | None; intent: str | None
+    intent_confidence: float | None; intent_probabilities: dict[str, float] | None
+    error: str | None
 
 class ThreatReport(BaseModel):
     signals: list[Signal]; risk_score: int
+    patterns: list[str] = []   # padrões de golpe recuperados (RAG)
+    evidence: list[str] = []   # o que o agente consultou, inclusive fontes indisponíveis
+    classifier: Classifier | None = None   # None = transação sem contexto
 
 class PolicyResult(BaseModel):
     allowed: bool; violations: list[str]
+    warnings: list[str] = []   # regra não conferida (token sem preço x limite em USD) -> ALERTAR
+
+class ReasonDetail(BaseModel):
+    text: str
+    sources: list[Literal["rule","classifier"]] = ["rule"]   # selo REGRA / CLASSIFICADOR na tela
+    probability: float | None = None
 
 class Verdict(BaseModel):
     analysis_id: str
-    verdict: Literal["ALLOW","WARN","BLOCK"]
+    verdict: Literal["ALLOW","WARN","BLOCK"]   # BLOCK só vem de regra em código
     risk_score: int
-    explanation_ptbr: str
+    explanation_ptbr: str      # template, ou reescrita pelo LLM depois do veredito
     reasons: list[str]
+    reason_details: list[ReasonDetail] = []    # os mesmos motivos, com a origem
     decoded: Decoded; threat: ThreatReport; policy: PolicyResult
-    report_hash: str   # keccak256 do JSON canônico
+    report_hash: str   # keccak256 do JSON canônico (inclui threat.classifier; não inclui a explicação)
+    llm_used: bool = False             # o LLM reescreveu a explicação (nunca o veredito)
+    timings_ms: dict[str, int] = {}    # decoder, threat, jev, policy, judge, decision, explain, total
+
+# Forense (mock) — POST /forensic
+class ForensicRequest(BaseModel):
+    tx_hash: str       # 0x + 64 hex
+
+class FundHop(BaseModel):
+    step: int; from_: str = Field(alias="from"); from_label: str
+    to: str; to_label: str; token: str; amount: str
+    tx_hash: str; minutes_after: int
+
+class ForensicReport(BaseModel):
+    tx_hash: str
+    mocked: bool       # True = rota simulada, não lida da blockchain
+    hops: list[FundHop]
+    report_md: str
 ```
 
 ## 3. Estado do LangGraph
@@ -63,9 +103,11 @@ class SignGuardState(TypedDict):
     decoded: Decoded | None
     threat: ThreatReport | None
     policy_result: PolicyResult | None
-    verdict: Verdict | None
+    verdict: Verdict | None    # fechado no judge; o explain só troca explanation_ptbr
     errors: list[str]
+    timings: dict[str, int]    # ms por nó; vira Verdict.timings_ms
 ```
+Nós: `decoder` → (`threat` ∥ `policy`) → `judge` → `explain`. Só o `explain` chama LLM.
 
 ## 4. Política (JSON)
 ```json
@@ -77,6 +119,7 @@ class SignGuardState(TypedDict):
   "min_contract_age_days": 7
 }
 ```
+`allowed_hours` é conferido em UTC. Um dado que a regra precisa e não está disponível (valor em USD, idade de um contrato) conta como violação.
 
 ## 5. Banco (SQLite)
 ```sql
@@ -100,8 +143,9 @@ CREATE TABLE blocklist (address TEXT PRIMARY KEY, label TEXT, source TEXT);
 | `decode_calldata` | `(to, data) -> fn, args` | ABIs locais + 4byte |
 | `contract_info` | `(addr) -> age_days, verified, creator` | Etherscan |
 | `check_blocklist` | `(addrs) -> hits` | SQLite |
-| `search_patterns` | `(query) -> docs` | Chroma |
-| `trace_funds` | `(tx_hash) -> hops` | mock/Etherscan |
+| `jev.classify` | `(context, acao_real) -> injection_p, intent, intent_confidence` | Jev (TypeSafe AI), modelo fixado; sem chave → desligado |
+| `search_patterns` | `(query) -> docs` | Chroma (em memória) sobre `patterns.json`; sem `chromadb`, tags |
+| `trace_funds` | `(tx_hash) -> hops` | mock (rota derivada do hash) |
 
 ## 7. Contrato
 ```solidity
@@ -120,14 +164,16 @@ function isBlocked(bytes32 intentHash) external view returns (bool); // para gua
 signguard/
   .env.example
   README.md
-  docs/        01..06
+  docs/        01..07
   backend/
     api/       main.py, models.py, db.py, attest.py, config.py
-    agents/    graph.py, decoder.py, threat.py, policy.py, judge.py, llm.py, prompts.py
-    tools/     decode.py, simulate.py, etherscan.py, rag.py, hashing.py
+    agents/    graph.py, decoder.py, threat.py, policy.py, judge.py, forensic.py, llm.py, prompts.py
+    tools/     decode.py, simulate.py, etherscan.py, jev.py, rag.py, trace.py, hashing.py
     data/      patterns.json (+ signguard.db gerado)
     demo/      make_fixtures.py, fixtures/*.json, wallet_bot.py
-    tests/     test_scenarios.py
+    eval/      make_dataset.py, dataset.jsonl (40 casos rotulados), results.json
+    scripts/   eval.py (evidências), check_llm.py
+    tests/     test_scenarios.py, test_agents.py, test_properties.py, test_backend.py
   contracts/   src/SignGuardRegistry.sol, test/, script/Deploy.s.sol
   web/         app/, components/, lib/types.ts, lib/api.ts, mocks/mock-data.json
 ```

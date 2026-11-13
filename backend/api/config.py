@@ -23,8 +23,21 @@ OFFLINE = env("OFFLINE", "0") == "1"
 # LLM via OpenRouter (API compatível com OpenAI)
 LLM_API_KEY = env("OPENROUTER_API_KEY")
 LLM_BASE_URL = env("LLM_BASE_URL", "https://openrouter.ai/api/v1")
-LLM_MODEL = env("LLM_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
-LLM_TIMEOUT = float(env("LLM_TIMEOUT", "20"))
+# Um modelo ou vários separados por vírgula: se o primeiro deixar de existir (os :free mudam), usa o próximo.
+LLM_MODEL = env("LLM_MODEL", "google/gemma-4-26b-a4b-it")
+# O LLM só redige a explicação, depois que o veredito já foi decidido em código (docs/07 §5).
+# Teto da chamada de explicação: no máximo 4 s, mesmo que o .env peça mais. Estourou -> texto do template.
+LLM_TIMEOUT = min(float(env("LLM_TIMEOUT", "4")), 4.0)
+
+# Classificador Jev (TypeSafe AI): probabilidade calibrada para o texto do contexto (docs/07 §4).
+# Sem chave -> fica desligado e vale só o regex. A versão é fixada: entra no relatório atestado.
+TYPESAFE_API_KEY = env("TYPESAFE_API_KEY")
+JEV_MODEL = env("JEV_MODEL", "jev-1.14.0")
+JEV_TIMEOUT = float(env("JEV_TIMEOUT", "2"))
+
+# RAG (padrões de golpe): "chroma" (cai para "tags" se o chromadb faltar ou falhar) ou "tags"
+RAG_BACKEND = env("RAG_BACKEND", "chroma")
+RAG_EMBEDDINGS = env("RAG_EMBEDDINGS", "local")     # "local" (sem download) ou "minilm" (modelo ONNX do Chroma)
 
 # Blockchain
 MAINNET_RPC_URL = env("MAINNET_RPC_URL")            # ou http://127.0.0.1:8545 (anvil --fork-url ...)

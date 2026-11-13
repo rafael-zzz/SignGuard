@@ -9,7 +9,8 @@
     "value": "0",
     "data": "0x095ea7b30000000000000000000000009f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
     "context": "Site 'airdrop-usdt-oficial.xyz' pediu para conectar a carteira e liberar o resgate.",
-    "owner_id": "default"
+    "owner_id": "default",
+    "source": "user"
   },
   "offline": {
     "simulation_ok": true,

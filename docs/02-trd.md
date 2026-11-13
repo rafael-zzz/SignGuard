@@ -30,7 +30,7 @@ flowchart LR
 | Simulação | Anvil (`--fork-url` mainnet) + `debug_traceCall` / balance diff | Gratuito, reproduzível offline |
 | Decodificação | ABIs conhecidas (ERC-20, Permit2, Uniswap) + 4byte | Cobre os cenários da demo |
 | Dados on-chain | Etherscan API (idade do contrato, verificado, criador) | Sinais de risco baratos |
-| RAG | MVP: busca por tags em `patterns.json`; upgrade: Chroma + embeddings | Funciona sem dependência; evolui sem mudar a interface |
+| RAG | Chroma + embeddings sobre `patterns.json` (embeddings locais por padrão; MiniLM opcional); sem `chromadb`, busca por tags | Funciona sem dependência; evolui sem mudar a interface |
 | Contrato | Solidity + Foundry, deploy em Sepolia | Atestados auditáveis |
 | Banco | SQLite | Zero setup |
 | Front | **Next.js** (App Router, TypeScript) | Escolha do time; roda com mocks sem backend |
@@ -40,16 +40,18 @@ flowchart LR
 | Nó | Entrada | Ferramentas | Saída (JSON) |
 |---|---|---|---|
 | decoder | `tx` | `simulate_tx`, `decode_calldata` | `{action, token, spender, amount, is_unlimited, balance_changes[], summary_ptbr}` |
-| threat | `tx`, `decoded` | `contract_info`, `check_blocklist`, `search_patterns` | `{signals[], risk_score, evidence[]}` |
+| threat | `tx`, `decoded` | `contract_info`, `check_blocklist`, `search_patterns`, `jev.classify` | `{signals[], risk_score, evidence[], classifier}` |
 | policy | `tx`, `decoded`, `policy` | — (código puro) | `{violations[], allowed: bool}` |
-| judge | tudo acima | — | `{verdict, risk_score, explanation_ptbr, reasons[]}` |
+| judge | tudo acima | — (código puro, sem LLM) | `{verdict, risk_score, reasons[], reason_details[]}` |
+| explain | `verdict` | LLM (opcional, teto de 4 s) | `explanation_ptbr` (só texto; não altera o veredito) |
 | forensic (mock) | `tx_hash` | `trace_funds` | relatório markdown |
 
-Execução: `decoder` → (`threat` ∥ `policy`) → `judge` → `attest` (opcional).
+Execução: `decoder` → (`threat` ∥ `policy`) → `judge` → `explain` → `attest` (opcional). O `decoder` não usa LLM: o resumo vem de template.
 
 ## 4. Regras de decisão do Juiz
 - Qualquer violação de política → **BLOQUEAR** (não negociável pelo LLM).
 - Endereço em blocklist → **BLOQUEAR**.
+- Limite em USD não conferido (token sem preço) → **ALERTAR**.
 - Sinais fortes (approve ilimitado + contrato < 7 dias + não verificado) → **BLOQUEAR**.
 - `risk_score` ≥ 40 → **ALERTAR**; senão **PERMITIR**. Score nunca leva a BLOQUEAR sozinho.
 - **BLOQUEAR só vem de regra em código.** O Jev (classificador) pode levar no máximo a **ALERTAR**, via limiar fixo: `injection ≥ 0.80`, `intent=divergente ≥ 0.70`.
@@ -85,7 +87,7 @@ event Attested(bytes32 indexed txHash, address indexed target, Verdict v, uint8 
 Medido por nó em `timings_ms` na resposta do `/analyze`.
 
 ## 8. Variáveis de ambiente
-`TYPESAFE_API_KEY`, `JEV_MODEL`, `JEV_TIMEOUT`, `OPENROUTER_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `OFFLINE`, `MAINNET_RPC_URL`, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY`, `ATTESTER_PRIVATE_KEY` (testnet), `REGISTRY_ADDRESS`
+`TYPESAFE_API_KEY`, `JEV_MODEL`, `JEV_TIMEOUT`, `OPENROUTER_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT`, `OFFLINE`, `MAINNET_RPC_URL`, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY`, `ATTESTER_PRIVATE_KEY` (testnet), `REGISTRY_ADDRESS`, `RAG_BACKEND`, `RAG_EMBEDDINGS`
 
 ## 9. Fallbacks para a demo
 - Cache das respostas de Etherscan/simulação dos 4 cenários.

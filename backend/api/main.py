@@ -10,12 +10,14 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from agents import llm
-from agents.graph import analyze
+from agents.forensic import investigate
+from agents.graph import analyze, latency_stats
+from tools import jev
 from . import attest as attest_mod
 from . import db
 from .auth import Owner, require_owner, demo_enabled
 from .config import FIXTURES_DIR, OFFLINE
-from .models import AttestRequest, AttestResponse, TxInput, Verdict, PolicyInput
+from .models import AttestRequest, AttestResponse, ForensicReport, ForensicRequest, TxInput, Verdict, PolicyInput
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,7 +39,10 @@ def _fixtures() -> dict[str, dict]:
 
 @app.get("/health")
 def health():
-    return {"ok": True, "offline": OFFLINE, "demo_mode": demo_enabled(), "llm": llm.available(), "attest_onchain": not OFFLINE and attest_mod.configured()}
+    return {"ok": True, "offline": OFFLINE, "demo_mode": demo_enabled(), "llm": llm.available(),
+            "classifier": {"provider": "jev", "model": jev.JEV_MODEL, "enabled": jev.enabled()},
+            "latency_ms": latency_stats(),   # decisão (até o veredito) das análises deste processo; None = nenhuma ainda
+            "attest_onchain": not OFFLINE and attest_mod.configured()}
 
 
 @app.get("/scenarios")
@@ -124,15 +129,7 @@ def attest(req: AttestRequest, owner: Owner):
     return AttestResponse(analysis_id=req.analysis_id, onchain_tx=h, explorer_url=url, mocked=mocked)
 
 
-@app.post("/forensic")
-def forensic(body: dict, owner: Owner):
-    """Mock do Agente Forense (fora do MVP)."""
-    tx_hash = body.get("tx_hash", "0x…")
-    return {
-        "tx_hash": tx_hash,
-        "report_md": (
-            f"# Relatório forense (demo)\n\n- Transação analisada: `{tx_hash}`\n"
-            "- Rota dos fundos: carteira da vítima → endereço do golpista → mixer/bridge (rastreamento completo no roadmap)\n"
-            "- Próximos passos: acionar a exchange de destino com este relatório e registrar boletim de ocorrência.\n"
-        ),
-    }
+@app.post("/forensic", response_model=ForensicReport, response_model_by_alias=True)
+def forensic(req: ForensicRequest, owner: Owner):
+    """Agente Forense (mock): rota simulada dos fundos + texto pronto para exchange e boletim de ocorrência."""
+    return investigate(req.tx_hash)

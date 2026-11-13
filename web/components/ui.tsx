@@ -6,7 +6,7 @@ import {
   ArrowRight, ChevronRight, Search, ListFilter, X, Home, Sparkle, LayoutGrid, Copy, Check, Loader2,
   type LucideIcon,
 } from "lucide-react";
-import type { VerdictCode } from "@/lib/types";
+import type { ReasonDetail, Verdict, VerdictCode } from "@/lib/types";
 
 /* CTA pill (onboarding / superfície escura) */
 export function CtaPill({ children, onClick, disabled }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean }) {
@@ -141,6 +141,57 @@ export const verdictMap: Record<VerdictCode, { label: string; text: string; bg: 
   WARN: { label: "Alertar", text: "text-warning", bg: "bg-warning" },
   BLOCK: { label: "Bloquear", text: "text-negative", bg: "bg-negative" },
 };
+
+/* Selo de origem do motivo: REGRA (determinístico, em código) ou CLASSIFICADOR 0,93 (probabilístico).
+   Monocromático por regra do DS: preenchido = quem decide; contorno = quem só filtra. */
+const fmtP = (p: number) => p.toFixed(2).replace(".", ",");
+export function SourceBadges({ sources, probability }: { sources?: ("rule" | "classifier")[]; probability?: number | null }) {
+  const list = sources?.length ? sources : (["rule"] as const);
+  return (
+    <span className="inline-flex shrink-0 flex-wrap gap-1 align-middle">
+      {list.map((s) =>
+        s === "rule" ? (
+          <span key={s} title="Determinístico: regra escrita em código" className="rounded-full bg-ink-950 px-2 py-0.5 text-micro font-semibold uppercase tracking-wide text-on-dark">
+            Regra
+          </span>
+        ) : (
+          <span key={s} title="Probabilístico: classificador com limiar fixo. No máximo ALERTA, nunca bloqueia." className="tabular rounded-full border border-paper-border px-2 py-0.5 text-micro font-semibold uppercase tracking-wide text-text-primary">
+            Classificador{probability != null ? ` ${fmtP(probability)}` : ""}
+          </span>
+        ),
+      )}
+    </span>
+  );
+}
+
+/* Motivos do veredito, cada um com o selo de origem. Aceita respostas antigas (sem reason_details). */
+export function Reasons({ v }: { v: Verdict }) {
+  const items: ReasonDetail[] = v.reason_details?.length ? v.reason_details : v.reasons.map((text) => ({ text }));
+  if (!items.length) return null;
+  return (
+    <ul className="grid gap-2 text-body-sm">
+      {items.map((r, i) => (
+        <li key={`${i}-${r.text}`} className="flex flex-wrap items-start gap-x-2 gap-y-1">
+          <SourceBadges sources={r.sources} probability={r.probability} />
+          <span className="min-w-0 flex-1 basis-48 [overflow-wrap:anywhere]">{shortenAddrs(r.text)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* Tempo da análise: decisão (só código + classificador) e, se houve, a explicação por IA. */
+export function AnalysisTime({ v, className }: { v: Verdict; className?: string }) {
+  const t = v.timings_ms;
+  if (!t || t.decision == null) return null;
+  const ms = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(".", ",")} s` : `${n} ms`);
+  return (
+    <span className={clsx("tabular", className)} title="Tempo até o veredito. A explicação por IA roda depois e não altera a decisão.">
+      decisão em {ms(t.decision)}
+      {v.llm_used && t.explain != null ? ` · explicação por IA +${ms(t.explain)}` : ""}
+    </span>
+  );
+}
 
 /* Rótulo de status pequeno: ponto colorido + texto */
 export function StatusText({ tone, children }: { tone: "ok" | "warn" | "block" | "neutral"; children: React.ReactNode }) {
