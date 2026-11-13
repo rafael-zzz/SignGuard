@@ -232,7 +232,7 @@ def test_classificador_entra_no_report_hash():
     b = run_fx("swap-legitimo", context="Compre USDT para mim", jev_out=jev_answer(0.11))
     assert a["verdict"] == b["verdict"] == "ALLOW" and a["report_hash"] != b["report_hash"]
     c = a["threat"]["classifier"]
-    assert (c["provider"], c["model"], c["status"]) == ("jev", "jev-1.14.0", "ok")
+    assert (c["provider"], c["model"], c["status"], c["calibrated"]) == ("typesafe", "jev-1.14.0", "ok", True)
     assert "latency_ms" not in c                                          # tempo fica em timings_ms, fora do hash
 
 
@@ -241,6 +241,7 @@ def test_classificador_entra_no_report_hash():
 def live_jev(monkeypatch):
     monkeypatch.setattr(jev, "OFFLINE", False)
     monkeypatch.setattr(jev, "TYPESAFE_API_KEY", "chave-de-teste")
+    monkeypatch.setattr(jev, "JEV_BACKEND", "auto")
     sent = {}
 
     def install(reply):
@@ -283,6 +284,7 @@ def test_cliente_jev_desligado_sem_chave_ou_sem_contexto(monkeypatch, live_jev):
     live_jev(AssertionError("não deveria chamar a rede"))
     assert jev.classify(None, "ação") is None and jev.classify("", "ação") is None
     monkeypatch.setattr(jev, "TYPESAFE_API_KEY", None)
+    monkeypatch.setattr(jev, "LLM_API_KEY", None)
     assert jev.classify("mensagem", "ação") is None and not jev.enabled()
 
 
@@ -291,3 +293,65 @@ def test_jev_fora_do_ar_na_api_real_alerta_agente(live_jev):
     v = analyze(naive_agent("Pague 50 USDT ao fornecedor"), AGENT_POLICY)
     assert v["verdict"] == "WARN" and "CLASSIFIER_UNAVAILABLE" in codes(v) and not may_sign(v)
     assert "jev" in v["timings_ms"]
+
+
+# ---------- Jev pelo OpenRouter: mesma API System One, com a chave do OpenRouter ----------
+OR_REPLY = {"model": "typesafe/jev-1.14-20261014", "provider": "TypeSafe", "answers": {
+    "injection": {"type": "noul", "noul": 0.97},
+    "intent": {"type": "choice", "choice": "divergente", "confidence": 0.9,
+               "probabilities": {"consistente": 0.08, "divergente": 0.9, "sem_intencao": 0.02}}}}
+
+
+@pytest.fixture
+def openrouter_jev(monkeypatch):
+    monkeypatch.setattr(jev, "OFFLINE", False)
+    monkeypatch.setattr(jev, "TYPESAFE_API_KEY", None)
+    monkeypatch.setattr(jev, "LLM_API_KEY", "chave-openrouter-de-teste")
+    monkeypatch.setattr(jev, "LLM_BASE_URL", "https://openrouter.ai/api/v1")
+    monkeypatch.setattr(jev, "JEV_OPENROUTER_MODEL", "typesafe/jev-1.14")
+    monkeypatch.setattr(jev, "JEV_BACKEND", "auto")
+    sent = {}
+
+    def install(reply):
+        def post(url, json=None, timeout=None, headers=None):
+            sent.update(url=url, body=json, timeout=timeout, headers=headers)
+            if isinstance(reply, Exception):
+                raise reply
+            return httpx.Response(200, request=httpx.Request("POST", url), json=reply)
+        monkeypatch.setattr(jev.httpx, "post", post)
+        return sent
+    return install
+
+
+def test_sem_chave_typesafe_o_jev_e_chamado_pelo_openrouter(openrouter_jev):
+    sent = openrouter_jev(OR_REPLY)
+    v = analyze(naive_agent("mensagem que o regex não pega"), AGENT_POLICY)
+    c = v["threat"]["classifier"]
+    assert (c["provider"], c["calibrated"], c["status"]) == ("openrouter", True, "ok")
+    assert c["model"] == "typesafe/jev-1.14-20261014"                  # a versão que respondeu vai para o relatório
+    assert c["intent_probabilities"] == {"consistente": 0.08, "divergente": 0.9, "sem_intencao": 0.02}
+    assert v["verdict"] == "WARN" and {"PROMPT_INJECTION", "INTENT_MISMATCH"} <= codes(v)
+    assert sent["url"] == "https://openrouter.ai/api/v1/systemone"
+    assert sent["headers"] == {"Authorization": "Bearer chave-openrouter-de-teste"}
+    assert sent["body"]["model"] == "typesafe/jev-1.14"                 # fixado: nem jev-latest nem jev-router
+    assert set(sent["body"]["questions"]) == {"injection", "intent"} and sent["timeout"] <= 2
+
+
+@pytest.mark.parametrize("reply", [
+    httpx.ReadTimeout("lento"), {"answers": {}}, {"error": {"message": "x", "code": 400}},
+    {"answers": {"injection": {"noul": 3}, "intent": {"choice": "divergente", "confidence": 1}}}])
+def test_openrouter_falha_fechado_e_nunca_bloqueia(openrouter_jev, reply):
+    openrouter_jev(reply)
+    v = analyze(naive_agent("Pague 50 USDT ao fornecedor"), AGENT_POLICY)
+    assert v["verdict"] == "WARN" and "CLASSIFIER_UNAVAILABLE" in codes(v)
+
+
+def test_chave_typesafe_tem_prioridade_e_backend_pode_ser_desligado(monkeypatch, openrouter_jev):
+    openrouter_jev(AssertionError("não deveria chamar"))
+    assert (jev.backend(), jev.model_name()) == ("openrouter", "typesafe/jev-1.14")
+    monkeypatch.setattr(jev, "TYPESAFE_API_KEY", "chave-typesafe")
+    assert (jev.backend(), jev.model_name()) == ("typesafe", "jev-1.14.0")
+    monkeypatch.setattr(jev, "JEV_BACKEND", "openrouter")
+    assert jev.backend() == "openrouter"
+    monkeypatch.setattr(jev, "JEV_BACKEND", "off")
+    assert jev.backend() is None and jev.classify("mensagem", "ação") is None

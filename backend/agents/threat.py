@@ -86,22 +86,23 @@ def classify_context(tx: dict, acao_real: str, offline: dict) -> tuple[dict | No
 
     snippet = detect_injection(context)
     out = jev.classify(context, acao_real, offline)
-    classifier = {"provider": "jev", "model": jev.JEV_MODEL, "status": "off",
+    classifier = {"provider": jev.backend() or "typesafe", "model": jev.model_name(), "status": "off", "calibrated": True,
                   "thresholds": {"injection": jev.INJECTION_T, "intent": jev.INTENT_T},
                   "injection_p": None, "intent": None, "intent_confidence": None,
                   "intent_probabilities": None, "error": None}
     latency = None
     if out is None:
-        evidence.append("classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex")
+        evidence.append("classificador: desligado (sem chave ou OFFLINE); contexto checado só por regex")
     elif "error" in out:
         latency = out.get("latency_ms")
         classifier.update(status="error", error=out["error"])
-        evidence.append(f"classificador Jev: indisponível ({out['error']}); contexto checado só por regex")
+        evidence.append(f"classificador: indisponível ({out['error']}); contexto checado só por regex")
     else:
         latency = out.get("latency_ms")
-        classifier.update(status="ok", model=out["model"], injection_p=out["injection_p"], intent=out["intent"],
+        classifier.update(status="ok", provider=out["provider"], calibrated=out["calibrated"],
+                          model=out["model"], injection_p=out["injection_p"], intent=out["intent"],
                           intent_confidence=out["intent_confidence"], intent_probabilities=out["intent_probabilities"])
-        evidence.append(f"classificador Jev ({out['model']}): injeção p={_p(out['injection_p'])} "
+        evidence.append(f"classificador Jev ({out['model']}, via {out['provider']}): injeção p={_p(out['injection_p'])} "
                         f"(limiar {_p(jev.INJECTION_T)}); intenção {out['intent']} "
                         f"com confiança {_p(out['intent_confidence'])} (limiar {_p(jev.INTENT_T)})")
 
@@ -111,13 +112,13 @@ def classify_context(tx: dict, acao_real: str, offline: dict) -> tuple[dict | No
         inj_ev.append(f"o contexto contém instruções típicas de manipulação de agente: “{snippet}”")
         inj_src.append("rule")
     if ok and classifier["injection_p"] >= jev.INJECTION_T:
-        inj_ev.append(f"classificador Jev: probabilidade de injeção {_p(classifier['injection_p'])} ≥ {_p(jev.INJECTION_T)}")
+        inj_ev.append(f"classificador: probabilidade de injeção {_p(classifier['injection_p'])} ≥ {_p(jev.INJECTION_T)}")
         inj_src.append("classifier")
     if inj_src:
         signal("PROMPT_INJECTION", inj_ev, inj_src, classifier["injection_p"] if ok else None)
     if ok and classifier["intent"] == "divergente" and classifier["intent_confidence"] >= jev.INTENT_T:
         signal("INTENT_MISMATCH",
-               [f"classificador Jev: a ação real diverge do que a mensagem pede "
+               [f"classificador: a ação real diverge do que a mensagem pede "
                 f"(confiança {_p(classifier['intent_confidence'])} ≥ {_p(jev.INTENT_T)})"],
                ["classifier"], classifier["intent_confidence"])
     if classifier["status"] == "error" and tx.get("source") == "agent":
