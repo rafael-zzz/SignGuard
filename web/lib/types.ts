@@ -42,6 +42,8 @@ export interface Classifier {
   calibrated?: boolean;
   thresholds: Record<string, number>;
   injection_p?: number | null;
+  /** Por comportamento: override, impersonation, bypass, drain. injection_p é o maior. */
+  injection_scores?: Record<string, number> | null;
   intent?: "consistente" | "divergente" | "sem_intencao" | null;
   intent_confidence?: number | null;
   intent_probabilities?: Record<string, number> | null;

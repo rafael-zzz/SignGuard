@@ -47,8 +47,10 @@ class Classifier(BaseModel):   # o que o Jev viu; entra no report_hash (docs/07 
     provider: str              # "jev"
     model: str                 # versão fixada: jev-1.14.0
     status: Literal["ok","off","error"]   # off = sem chave/OFFLINE (só regex)
-    thresholds: dict[str, float]          # {"injection": 0.80, "intent": 0.70}
-    injection_p: float | None; intent: str | None
+    thresholds: dict[str, float]          # {"injection": 0.90, "intent": 0.70}
+    injection_p: float | None             # maior valor de injection_scores
+    injection_scores: dict[str, float] | None   # override, impersonation, bypass, drain
+    intent: str | None
     intent_confidence: float | None; intent_probabilities: dict[str, float] | None
     error: str | None
 
@@ -143,7 +145,7 @@ CREATE TABLE blocklist (address TEXT PRIMARY KEY, label TEXT, source TEXT);
 | `decode_calldata` | `(to, data) -> fn, args` | ABIs locais + 4byte |
 | `contract_info` | `(addr) -> age_days, verified, creator` | Etherscan |
 | `check_blocklist` | `(addrs) -> hits` | SQLite |
-| `jev.classify` | `(context, acao_real) -> injection_p, intent, intent_confidence` | Jev (TypeSafe AI), modelo fixado; sem chave → desligado |
+| `jev.classify` | `(context, acao_real) -> injection_p, injection_scores, intent, intent_confidence` | Jev 1.14 fixado, pela API da TypeSafe ou pelo OpenRouter (`/api/v1/systemone`); sem nenhuma chave → desligado |
 | `search_patterns` | `(query) -> docs` | Chroma (em memória) sobre `patterns.json`; sem `chromadb`, tags |
 | `trace_funds` | `(tx_hash) -> hops` | mock (rota derivada do hash) |
 
@@ -171,7 +173,7 @@ signguard/
     tools/     decode.py, simulate.py, etherscan.py, jev.py, rag.py, trace.py, hashing.py
     data/      patterns.json (+ signguard.db gerado)
     demo/      make_fixtures.py, fixtures/*.json, wallet_bot.py
-    eval/      make_dataset.py, dataset.jsonl (40 casos rotulados), results.json
+    eval/      make_dataset.py, dataset.jsonl (60 casos rotulados), results.json, results-live-jev.json
     scripts/   eval.py (evidências), check_llm.py
     tests/     test_scenarios.py, test_agents.py, test_properties.py, test_backend.py
   contracts/   src/SignGuardRegistry.sol, test/, script/Deploy.s.sol

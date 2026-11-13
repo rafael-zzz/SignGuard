@@ -82,7 +82,8 @@ class Classifier(BaseModel):
     calibrated: bool = True          # probabilidade calibrada do Jev
     status: Literal["ok", "off", "error"]   # off = sem chave/OFFLINE (só regex) · error = não respondeu
     thresholds: dict[str, float]     # limiares fixos em código: {"injection": 0.80, "intent": 0.70}
-    injection_p: float | None = Field(default=None, ge=0, le=1)
+    injection_p: float | None = Field(default=None, ge=0, le=1)     # maior valor de injection_scores
+    injection_scores: dict[str, float] | None = None   # por comportamento: override, impersonation, bypass, drain
     intent: Literal["consistente", "divergente", "sem_intencao"] | None = None
     intent_confidence: float | None = Field(default=None, ge=0, le=1)
     intent_probabilities: dict[str, float] | None = None

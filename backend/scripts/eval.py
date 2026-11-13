@@ -73,7 +73,8 @@ def main() -> int:
     # ---- 1) Veredito, determinismo e latência (LLM desligado: o veredito não depende dele)
     real_chat = llm.chat_structured
     llm.chat_structured = lambda *a, **k: (None, None)
-    JEV_KEYS = ("provider", "calibrated", "model", "injection_p", "intent", "intent_confidence", "intent_probabilities")
+    JEV_KEYS = ("provider", "calibrated", "model", "injection_p", "injection_scores", "intent", "intent_confidence",
+                "intent_probabilities")
     frozen: list[dict] = []
     classifier_errors: list[str] = []
     results, unstable, timings = [], [], {}
@@ -109,8 +110,7 @@ def main() -> int:
         for row, r in zip(rows, results):
             c = r["threat"]["classifier"]
             if c and c["status"] == "ok":
-                row["offline"]["jev"] = {k: c[k] for k in ("provider", "calibrated", "model", "injection_p", "intent",
-                                                           "intent_confidence", "intent_probabilities")}
+                row["offline"]["jev"] = {k: c[k] for k in JEV_KEYS}
         DATASET.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
         recorded = 0
         for path, fx in fixtures.items():
@@ -119,8 +119,7 @@ def main() -> int:
             c = analyze(fx["tx"], db.DEFAULT_POLICIES[fx["tx"]["owner_id"]],
                         {k: v for k, v in fx["offline"].items() if k != "jev"})["threat"]["classifier"]
             if c and c["status"] == "ok":
-                fx["offline"]["jev"] = {k: c[k] for k in ("provider", "calibrated", "model", "injection_p", "intent",
-                                                          "intent_confidence", "intent_probabilities")}
+                fx["offline"]["jev"] = {k: c[k] for k in JEV_KEYS}
                 path.write_text(json.dumps(fx, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                 recorded += 1
         print(f"Respostas do Jev gravadas: {len(jev_seen)} casos do dataset, {recorded} fixtures da demo.\n")
@@ -195,6 +194,31 @@ def main() -> int:
               f"(VP {combined['tp']}, FP {combined['fp']}, FN {combined['fn']})")
     else:
         print("  regex + Jev:  n/d — sem TYPESAFE_API_KEY e sem respostas gravadas (rode --live --record-jev)")
+    # Separação das pontuações de injeção do classificador: maior entre os benignos x menor entre os ataques
+    scored = [(row, r["threat"]["classifier"]["injection_p"]) for row, r in with_ctx
+              if (r["threat"]["classifier"] or {}).get("status") == "ok"]
+    benign = sorted((p, row["id"]) for row, p in scored if not row["injection"])
+    attack = sorted((p, row["id"]) for row, p in scored if row["injection"])
+    separation = None
+    if benign and attack:
+        separation = {"benign_max": benign[-1][0], "benign_max_id": benign[-1][1], "attack_min": attack[0][0],
+                      "attack_min_id": attack[0][1], "benign_n": len(benign), "attack_n": len(attack),
+                      "benign_top": [p for p, _ in benign[-5:]], "attack_bottom": [p for p, _ in attack[:5]]}
+        print(f"  pontuação de injeção: benignos (n={len(benign)}) máx {benign[-1][0]:.2f} [{benign[-1][1]}] · "
+              f"ataques (n={len(attack)}) mín {attack[0][0]:.2f} [{attack[0][1]}]")
+        print(f"    5 maiores benignos: {[f'{p:.2f}' for p, _ in benign[-5:]]} · 5 menores ataques: {[f'{p:.2f}' for p, _ in attack[:5]]}")
+    # Divergência de intenção: só nos casos em que o rótulo é claro (mismatch True/False; None = ambíguo)
+    mism = [(row, "INTENT_MISMATCH" in codes(r)) for row, r in with_ctx
+            if (r["threat"]["classifier"] or {}).get("status") == "ok" and row.get("mismatch") is not None]
+    intent_metrics = None
+    if mism:
+        intent_metrics = prf([(row["mismatch"], hit) for row, hit in mism])
+        m = intent_metrics
+        print(f"  divergência de intenção ({len(mism)} casos rotulados): precisão {pct(m['precision'])} · recall {pct(m['recall'])} "
+              f"(VP {m['tp']}, FP {m['fp']}, FN {m['fn']})")
+        for row, hit in mism:
+            if hit != row["mismatch"]:
+                print(f"    {'✗ falso alarme' if hit else '· não pego'}: {row['id']}")
     print("\nLatência por nó, em ms (LLM desligado)" + ("" if args.live else " — offline: não inclui rede"))
     order = [k for k in ("decoder", "threat", "jev", "policy", "judge", "decision", "explain", "total") if k in timings]
     latency = {k: {"p50": percentile(timings[k], 50), "p95": percentile(timings[k], 95)} for k in order}
@@ -208,7 +232,7 @@ def main() -> int:
         "false_allow_malicious": false_allow, "malicious_cases": len(malicious), "under_block": under_block,
         "non_deterministic": unstable, "classifier_errors": classifier_errors,
         "live_classifier": {"cases": live_classified, "verdict_flips": flips, "answer_drifts": drifts}, "llm_mode": llm_mode, "verdicts_changed_by_llm": changed,
-        "injection": {"regex": regex, "regex_plus_jev": combined},
+        "injection": {"regex": regex, "regex_plus_jev": combined, "score_separation": separation, "intent_mismatch": intent_metrics},
         "classifier": {"backend": jev.backend(), "models": seen_models, "calibrated": calibrated if jev_seen else None,
                        "cases_classified": len(jev_seen),
                        "thresholds": {"injection": jev.INJECTION_T, "intent": jev.INTENT_T}},
