@@ -12,7 +12,7 @@ from eth_abi import encode
 from agents import decoder, judge, llm, threat
 from agents.graph import analyze, normalize_tx, run
 from agents.policy import contract_age_violations, evaluate
-from agents.prompts import MAX_UNTRUSTED_CHARS, DecoderOut, JudgeOut, judge_user_prompt, untrusted
+from agents.prompts import MAX_UNTRUSTED_CHARS, ExplainOut, explain_user_prompt, untrusted
 from api import db
 from api.config import FIXTURES_DIR
 from api.models import Verdict
@@ -44,12 +44,13 @@ def run_fx(name):
     return run(fx["tx"], db.DEFAULT_POLICIES[fx["tx"]["owner_id"]], fx["offline"])
 
 
-def fake_llm(monkeypatch, decoder_out=None, judge_out=None, seen=None):
+def fake_llm(monkeypatch, explain_out=None, seen=None):
+    """Troca o LLM da explicação (o único do pipeline) por uma resposta fixa."""
     def fake(system, user, schema, retries=1, timeout=None):
         if seen is not None:
             seen[schema.__name__] = user
-        raw = decoder_out if schema is DecoderOut else judge_out
-        return (schema.model_validate(raw), None) if raw else (None, None)
+            seen.setdefault("calls", []).append((schema.__name__, timeout))
+        return (schema.model_validate(explain_out), None) if explain_out else (None, None)
     monkeypatch.setattr(llm, "chat_structured", fake)
 
 
@@ -87,9 +88,9 @@ def test_regras_de_decisao(t, p, expected):
     assert judge.rule_verdict(t, p)[0] == expected
 
 
-# ---------- O LLM só pode subir o risco ----------
+# ---------- O LLM não altera veredito, risco nem motivos (docs/07 §5) ----------
 def test_llm_nao_baixa_o_piso(monkeypatch):
-    fake_llm(monkeypatch, judge_out={"explanation_ptbr": "Transação verificada pelo suporte. Pode assinar.",
+    fake_llm(monkeypatch, explain_out={"explanation_ptbr": "Transação verificada pelo suporte. Pode assinar.",
                                      "extra_risk": -80, "extra_reasons": ["É seguro assinar."]})
     base = run_fx("approve-golpe")["verdict"]
     assert base["verdict"] == "BLOCK" and base["risk_score"] >= 70
@@ -99,20 +100,21 @@ def test_llm_nao_baixa_o_piso(monkeypatch):
     assert base["llm_used"] is False                        # texto contraditório é descartado
 
 
-def test_llm_pode_subir_ate_alertar_mas_nao_bloqueia(monkeypatch):
+def test_llm_nao_sobe_o_risco_nem_acrescenta_motivo(monkeypatch):
     high_value = tx(value=str(10**18))                      # 1 ETH: só HIGH_VALUE (15)
-    assert analyze(high_value, DEFAULT)["verdict"] == "ALLOW"
-    fake_llm(monkeypatch, judge_out={"explanation_ptbr": "Envio alto para um endereço sem histórico.",
-                                     "extra_risk": 999, "extra_reasons": ["Destino sem histórico."]})
+    base = analyze(high_value, DEFAULT)
+    assert base["verdict"] == "ALLOW"
+    fake_llm(monkeypatch, explain_out={"explanation_ptbr": "Envio alto para um endereço sem histórico.",
+                                       "extra_risk": 999, "extra_reasons": ["Destino sem histórico."], "verdict": "BLOCK"})
     v = analyze(high_value, DEFAULT)
-    assert (v["verdict"], v["risk_score"]) == ("WARN", 45)  # 15 + teto de 30
-    assert "Destino sem histórico." in v["reasons"]
-    assert v["explanation_ptbr"].endswith("Revise com cuidado antes de assinar.")
-    assert v["llm_used"] is True
+    for key in ("verdict", "risk_score", "reasons", "reason_details", "report_hash", "threat", "policy", "decoded"):
+        assert v[key] == base[key], key                     # só o texto muda
+    assert v["explanation_ptbr"] == "Envio alto para um endereço sem histórico. Pode assinar."
+    assert v["llm_used"] is True and base["llm_used"] is False
 
 
 def test_explicacao_do_llm_recebe_a_recomendacao_do_codigo(monkeypatch):
-    fake_llm(monkeypatch, judge_out={"explanation_ptbr": "Você troca 0,05 ETH por USDT na Uniswap"})
+    fake_llm(monkeypatch, explain_out={"explanation_ptbr": "Você troca 0,05 ETH por USDT na Uniswap"})
     v = run_fx("swap-legitimo")["verdict"]
     assert v["explanation_ptbr"] == "Você troca 0,05 ETH por USDT na Uniswap. Pode assinar."
 
@@ -149,25 +151,25 @@ def client(monkeypatch):
 
 
 def test_fora_do_schema_tenta_de_novo_uma_vez_e_desiste(client):
-    c = client("isto não é json", '{"campo_errado": 1}', '{"summary_ptbr": "nunca chega aqui"}')
-    out, err = llm.chat_structured("s", "u", DecoderOut)
+    c = client("isto não é json", '{"campo_errado": 1}', '{"explanation_ptbr": "nunca chega aqui"}')
+    out, err = llm.chat_structured("s", "u", ExplainOut)
     assert out is None and "fora do schema" in err
     assert len(c.calls) == 2
 
 
 def test_segunda_tentativa_valida_e_aceita(client):
-    c = client("```json\n{}\n```", 'Claro! {"summary_ptbr": "Você envia 10 USDT."}')
-    out, err = llm.chat_structured("s", "u", DecoderOut)
-    assert out.summary_ptbr == "Você envia 10 USDT." and err is None
+    c = client("```json\n{}\n```", 'Claro! {"explanation_ptbr": "Você envia 10 USDT."}')
+    out, err = llm.chat_structured("s", "u", ExplainOut)
+    assert out.explanation_ptbr == "Você envia 10 USDT." and err is None
     assert "não seguiu o formato" in c.calls[1]["messages"][-1]["content"]
 
 
 def test_response_format_recusado_desce_de_nivel(client):
     refused = Exception("response_format not supported")
     refused.status_code = 400
-    c = client(refused, '{"summary_ptbr": "ok"}')
-    out, _ = llm.chat_structured("s", "u", DecoderOut)
-    assert out.summary_ptbr == "ok"
+    c = client(refused, '{"explanation_ptbr": "ok"}')
+    out, _ = llm.chat_structured("s", "u", ExplainOut)
+    assert out.explanation_ptbr == "ok"
     assert c.calls[0]["response_format"]["type"] == "json_schema"
     assert c.calls[0]["extra_body"] == {"provider": {"require_parameters": True}}
     assert c.calls[1]["response_format"]["type"] == "json_object"
@@ -175,54 +177,59 @@ def test_response_format_recusado_desce_de_nivel(client):
 
 
 def test_json_schema_eh_estrito_e_compatível_com_openrouter_gemma(client):
-    c = client('{"summary_ptbr": "ok"}')
-    out, _ = llm.chat_structured("s", "u", DecoderOut)
-    assert out.summary_ptbr == "ok"
+    c = client('{"explanation_ptbr": "ok"}')
+    out, _ = llm.chat_structured("s", "u", ExplainOut)
+    assert out.explanation_ptbr == "ok"
     request = c.calls[0]
     envelope = request["response_format"]["json_schema"]
     assert envelope["strict"] is True
     assert envelope["schema"] == {
         "type": "object",
-        "properties": {"summary_ptbr": {"type": "string"}},
-        "required": ["summary_ptbr"],
+        "properties": {"explanation_ptbr": {"type": "string"}},
+        "required": ["explanation_ptbr"],
         "additionalProperties": False,
     }
     assert request["extra_body"] == {"provider": {"require_parameters": True}}
 
 
 def test_erro_de_rede_cai_para_regras_sem_insistir(client):
-    c = client(ConnectionError("rede fora"), '{"summary_ptbr": "ok"}')
-    assert llm.chat_structured("s", "u", DecoderOut)[0] is None
-    assert llm.chat_structured("s", "u", DecoderOut)[0] is None      # em pausa: não chama de novo
+    c = client(ConnectionError("rede fora"), '{"explanation_ptbr": "ok"}')
+    assert llm.chat_structured("s", "u", ExplainOut)[0] is None
+    assert llm.chat_structured("s", "u", ExplainOut)[0] is None      # em pausa: não chama de novo
     assert len(c.calls) == 1
 
 
 def test_llm_lento_uma_vez_nao_pausa_duas_seguidas_pausa(client):
-    c = client(TimeoutError(), TimeoutError(), '{"summary_ptbr": "ok"}')
-    assert "não respondeu" in llm.chat_structured("s", "u", DecoderOut)[1]     # decoder lento
-    assert "indisponível" in llm.chat_structured("s", "u", DecoderOut)[1]      # judge também: pausa
-    assert "em pausa" in llm.chat_structured("s", "u", DecoderOut)[1]
+    c = client(TimeoutError(), TimeoutError(), '{"explanation_ptbr": "ok"}')
+    assert "não respondeu" in llm.chat_structured("s", "u", ExplainOut)[1]     # decoder lento
+    assert "indisponível" in llm.chat_structured("s", "u", ExplainOut)[1]      # judge também: pausa
+    assert "em pausa" in llm.chat_structured("s", "u", ExplainOut)[1]
     assert len(c.calls) == 2
 
 
-# ---------- Orçamento de latência do LLM (TRD §7: decoder + judge) ----------
-def test_decoder_e_judge_dividem_um_orcamento_de_tempo(monkeypatch):
-    given = {}
-
-    def fake(system, user, schema, retries=1, timeout=None):
-        given[schema.__name__] = timeout
-        if schema is DecoderOut:
-            time.sleep(0.2)
-        return None, None
-    monkeypatch.setattr(llm, "chat_structured", fake)
+# ---------- Latência (docs/07 §7): uma chamada de LLM por análise, depois do veredito ----------
+def test_uma_chamada_de_llm_por_analise_com_teto_de_4s(monkeypatch):
+    seen = {}
+    fake_llm(monkeypatch, seen=seen)
     run_fx("approve-golpe")
-    assert given["DecoderOut"] == llm.DECODER_BUDGET_S < llm.BUDGET_S
-    assert llm.BUDGET_S - 1 < given["JudgeOut"] <= llm.BUDGET_S - 0.2          # o Juiz fica com o que sobrou
+    assert seen["calls"] == [("ExplainOut", llm.BUDGET_S)]            # decoder e judge não chamam modelo
+    assert llm.BUDGET_S <= 4
+
+
+def test_veredito_e_fechado_antes_do_llm(monkeypatch):
+    """O LLM lento atrasa só o texto: o tempo até a decisão não inclui a explicação."""
+    def slow(*a, **k):
+        time.sleep(0.3)
+        return None, None
+    monkeypatch.setattr(llm, "chat_structured", slow)
+    t = run_fx("approve-golpe")["verdict"]["timings_ms"]
+    assert t["explain"] >= 300 and t["decision"] < 300 and t["total"] >= t["decision"] + 300
+    assert {"decoder", "threat", "policy", "judge", "explain", "decision", "total"} <= set(t)
 
 
 def test_sem_tempo_no_orcamento_nem_chama_o_llm(client):
-    c = client('{"summary_ptbr": "ok"}')
-    out, err = llm.chat_structured("s", "u", DecoderOut, timeout=0.3)
+    c = client('{"explanation_ptbr": "ok"}')
+    out, err = llm.chat_structured("s", "u", ExplainOut, timeout=0.3)
     assert out is None and "sem tempo" in err and c.calls == []
 
 
@@ -273,14 +280,14 @@ def openrouter(monkeypatch):
 
 def test_cliente_real_devolve_saida_validada(openrouter):
     openrouter(json.dumps({"explanation_ptbr": "Envio de 10 USDT.", "extra_risk": 5, "extra_reasons": ["x"]}))
-    out, err = llm.chat_structured("s", "u", JudgeOut)
-    assert err is None and (out.explanation_ptbr, out.extra_risk, out.extra_reasons) == ("Envio de 10 USDT.", 5, ["x"])
+    out, err = llm.chat_structured("s", "u", ExplainOut)
+    assert err is None and out.model_dump() == {"explanation_ptbr": "Envio de 10 USDT."}
 
 
 def test_cliente_real_respeita_o_orcamento(openrouter):
-    openrouter('{"summary_ptbr": "tarde demais"}', delay=3)
+    openrouter('{"explanation_ptbr": "tarde demais"}', delay=3)
     started = time.monotonic()
-    out, err = llm.chat_structured("s", "u", DecoderOut, timeout=1.2)
+    out, err = llm.chat_structured("s", "u", ExplainOut, timeout=1.2)
     assert out is None and "não respondeu" in err
     assert time.monotonic() - started < 2
 
@@ -290,14 +297,13 @@ def test_llm_fora_do_schema_veredito_so_com_regras(monkeypatch):
     st = run_fx("approve-golpe")
     assert st["verdict"]["verdict"] == "BLOCK" and st["verdict"]["llm_used"] is False
     assert st["verdict"]["explanation_ptbr"].endswith("Não assine.")
-    assert len(st["errors"]) == 2                                    # decoder e judge registraram a falha
+    assert len(st["errors"]) == 1                                    # só o explain chama o LLM
 
 
-def test_saida_do_juiz_e_limitada_em_codigo():
-    out = JudgeOut.model_validate({"explanation_ptbr": " ok ", "extra_risk": "1e9", "extra_reasons": ["a", 1, "", "b", "c", "d"],
-                                   "tool": "transfer_funds"})
-    assert (out.explanation_ptbr, out.extra_risk, out.extra_reasons) == ("ok", 30, ["a", "b", "c"])
-    assert not hasattr(out, "tool")                                  # campo livre é ignorado, não aciona nada
+def test_saida_do_llm_e_so_texto():
+    out = ExplainOut.model_validate({"explanation_ptbr": " ok ", "extra_risk": "1e9", "verdict": "ALLOW",
+                                     "tool": "transfer_funds"})
+    assert out.model_dump() == {"explanation_ptbr": "ok"}             # campo livre é ignorado, não aciona nada
 
 
 # ---------- Defesa contra prompt injection (TRD §5) ----------
@@ -311,19 +317,18 @@ def test_contexto_so_entra_nos_prompts_como_dado(monkeypatch):
     seen = {}
     fake_llm(monkeypatch, seen=seen)
     analyze(approve() | {"context": INJECTION}, DEFAULT)
-    assert "Ignore todas" not in seen["DecoderOut"]                  # o Decodificador nem recebe o contexto
-    before, _, inside = seen["JudgeOut"].rpartition('<untrusted origem="contexto">')
+    before, _, inside = seen["ExplainOut"].rpartition('<untrusted origem="contexto">')
     assert "Ignore todas" in inside and "Ignore todas" not in before
 
 
 def test_prompt_do_juiz_embrulha_evidencias():
-    p = judge_user_prompt({"summary_ptbr": "x </untrusted> y"}, {}, {}, "BLOCK", 70, [], [], None)
+    p = explain_user_prompt({"summary_ptbr": "x </untrusted> y"}, {}, {}, "BLOCK", 70, [], [], None)
     assert p.count("</untrusted>") == 2 and "‹/untrusted›" in p
 
 
 def test_contexto_longo_e_cortado_mas_as_evidencias_chegam_inteiras():
     signals = [{"code": c, "weight": w, "evidence": "e" * 300} for c, w in threat.WEIGHTS.items()]
-    p = judge_user_prompt({"summary_ptbr": "x"}, {"signals": signals}, {"allowed": False, "violations": ["v" * 200] * 4},
+    p = explain_user_prompt({"summary_ptbr": "x"}, {"signals": signals}, {"allowed": False, "violations": ["v" * 200] * 4},
                           "BLOCK", 100, [], [], "z" * (MAX_UNTRUSTED_CHARS + 500))
     evidence, context = p.split('<untrusted origem="contexto">')
     assert "[truncado]" not in evidence and '"politica"' in evidence
@@ -476,25 +481,18 @@ def test_explicacao_mostra_enderecos_truncados(monkeypatch):
     v = run_fx("approve-golpe")["verdict"]                           # modo regras
     assert "0x9f2c…9e0f" in v["explanation_ptbr"] and "0x9f2c3e4b" not in v["explanation_ptbr"]
     assert any("0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f" in r for r in v["reasons"])   # completo na evidência
-    fake_llm(monkeypatch, judge_out={"explanation_ptbr": "Permissão total para 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f."})
+    fake_llm(monkeypatch, explain_out={"explanation_ptbr": "Permissão total para 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f."})
     assert run_fx("approve-golpe")["verdict"]["explanation_ptbr"] == "Permissão total para 0x9f2c…9e0f. Não assine."
 
 
-# ---------- Resumo do Decodificador ----------
-@pytest.mark.parametrize("summary,accepted", [
-    ("Você libera o endereço 0x9f2c…9e0f para gastar todos os seus USDT.", True),
-    ("Você libera 10 USDT para um parceiro.", False),                                    # esconde o ilimitado
-    ("Permissão ilimitada. Confirme em https://golpe.xyz", False),                       # link
-    ("Permissão ilimitada para 0x7e57a77ac4e2000000000000000000000000dead.", False),    # endereço inventado
-])
-def test_resumo_do_llm_precisa_bater_com_os_fatos(monkeypatch, summary, accepted):
-    fake_llm(monkeypatch, decoder_out={"summary_ptbr": summary})
-    st = run_fx("approve-golpe")
-    assert (st["verdict"]["decoded"]["summary_ptbr"] == summary) is accepted
-    assert st["verdict"]["llm_used"] is accepted
+# ---------- Resumo do Decodificador: template, sem LLM (docs/07 §5) ----------
+def test_decodificador_nao_usa_llm(monkeypatch):
+    base = run_fx("approve-golpe")["verdict"]["decoded"]["summary_ptbr"]
+    fake_llm(monkeypatch, explain_out={"explanation_ptbr": "x", "summary_ptbr": "Você libera 10 USDT para um parceiro."})
+    assert run_fx("approve-golpe")["verdict"]["decoded"]["summary_ptbr"] == base
+    assert not hasattr(decoder, "llm")
 
 
-# ---------- RAG ----------
 def test_base_tem_de_10_a_20_padroes_com_os_temas_do_plano():
     patterns = _load()
     assert 10 <= len(patterns) <= 20
@@ -568,12 +566,12 @@ def test_modelo_que_deixou_de_existir_passa_para_o_proximo(client, monkeypatch):
     gone.status_code = 404
     monkeypatch.setattr(llm, "MODELS", ["antigo:free", "novo:free"])
     monkeypatch.setattr(llm, "_model", 0)
-    c = client(gone, '{"summary_ptbr": "ok"}', '{"summary_ptbr": "de novo"}')
-    out, err = llm.chat_structured("s", "u", DecoderOut)
-    assert out.summary_ptbr == "ok" and err is None
+    c = client(gone, '{"explanation_ptbr": "ok"}', '{"explanation_ptbr": "de novo"}')
+    out, err = llm.chat_structured("s", "u", ExplainOut)
+    assert out.explanation_ptbr == "ok" and err is None
     assert [k["model"] for k in c.calls] == ["antigo:free", "novo:free"]
     assert c.calls[1]["response_format"]["type"] == "json_schema"       # 404 de modelo não rebaixa o formato
-    llm.chat_structured("s", "u", DecoderOut)
+    llm.chat_structured("s", "u", ExplainOut)
     assert c.calls[2]["model"] == "novo:free"                            # fica no modelo que funcionou
 
 
@@ -582,8 +580,8 @@ def test_sem_modelo_valido_avisa_para_conferir_llm_model(client, monkeypatch):
     gone.status_code = 400
     monkeypatch.setattr(llm, "MODELS", ["errado"])
     monkeypatch.setattr(llm, "_model", 0)
-    c = client(gone, '{"summary_ptbr": "ok"}')
-    out, err = llm.chat_structured("s", "u", DecoderOut)
+    c = client(gone, '{"explanation_ptbr": "ok"}')
+    out, err = llm.chat_structured("s", "u", ExplainOut)
     assert out is None and "confira LLM_MODEL" in err and len(c.calls) == 1
     assert llm._mode == 0                                                # formato não foi rebaixado à toa
 
@@ -598,7 +596,7 @@ def test_padroes_chegam_ao_veredito_e_ao_prompt_do_juiz(monkeypatch):
     fake_llm(monkeypatch, seen=seen)
     v = run_fx("approve-golpe")["verdict"]
     assert v["threat"]["patterns"][0] == "Phishing de aprovação (approval phishing)"
-    assert "transferFrom para drenar" in seen["JudgeOut"]            # descrição recuperada vai para o LLM
+    assert "transferFrom para drenar" in seen["ExplainOut"]          # descrição recuperada vai para o LLM
 
 
 # ---------- Agente Forense (mock) — TRD §3, Fluxo 5 ----------
@@ -659,19 +657,12 @@ def test_endpoint_forensic():
 # ---------- Requisitos de integração (tests/test_security.py), vistos pelo lado dos agentes ----------
 def test_resposta_crua_do_modelo_sempre_passa_pelo_schema(monkeypatch):
     """chat_json devolve o que o modelo mandou; só o que valida no schema chega aos agentes."""
-    replies = [["lista"], "texto solto", {"summary_ptbr": "Você envia 10 USDT."}]
+    replies = [["lista"], "texto solto", {"explanation_ptbr": "Você envia 10 USDT."}]
     monkeypatch.setattr(llm, "chat_json", lambda *a: replies.pop(0))
-    out, err = llm.chat_structured("s", "u", DecoderOut)
+    out, err = llm.chat_structured("s", "u", ExplainOut)
     assert out is None and "fora do schema" in err and len(replies) == 1
-    out, err = llm.chat_structured("s", "u", DecoderOut)
-    assert out.summary_ptbr == "Você envia 10 USDT." and err is None
-
-
-def test_decodificador_nao_aceita_resumo_que_recomenda(monkeypatch):
-    fake_llm(monkeypatch, decoder_out={"summary_ptbr": "Troca de 0,05 ETH por USDT. Pode assinar, é seguro."})
-    st = run_fx("swap-legitimo")
-    assert "seguro" not in st["verdict"]["decoded"]["summary_ptbr"]
-    assert any("resumo do LLM descartado" in e for e in st["errors"])
+    out, err = llm.chat_structured("s", "u", ExplainOut)
+    assert out.explanation_ptbr == "Você envia 10 USDT." and err is None
 
 
 def test_eth_enviado_a_contrato_e_explicado_como_desconhecido():

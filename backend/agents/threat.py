@@ -1,8 +1,11 @@
 """Agente de Ameaças. Dono: Rafael (tools: Dávila).
 Contrato (TRD §3): entrada `tx`, `decoded`; ferramentas `contract_info`, `check_blocklist`
-(db.check_blocklist) e `search_patterns`; saída {signals[], risk_score, evidence[]} (+ patterns do RAG).
-Tudo aqui é código: sinais objetivos com peso. `evidence` registra o que foi consultado,
-inclusive o que estava indisponível. Pesos ajustáveis em WEIGHTS."""
+(db.check_blocklist), `search_patterns` e o classificador Jev; saída {signals[], risk_score, evidence[],
+classifier} (+ patterns do RAG).
+Os sinais on-chain são código (REGRA). O texto do contexto é classificado pelo Jev (probabilidade
+calibrada) e por regex, em OU; o limiar fixo em tools/jev.py transforma probabilidade em sinal.
+Sinal de classificador só tira o PERMITIR: o teto dele é ALERTAR (agents/judge.py). Ver docs/07 §4.
+`evidence` registra o que foi consultado, inclusive o que estava indisponível. Pesos em WEIGHTS."""
 import re
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
@@ -10,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from agents.policy import fmt_age
 from api import db
 from tools.decode import fmt_br, known_contract_name
+from tools import jev
 from tools.etherscan import contract_info
 from tools.rag import search_patterns
 
@@ -21,8 +25,12 @@ WEIGHTS = {
     "SIMULATION_FAILED": 40,
     "UNKNOWN_FUNCTION": 40,   # não dá para explicar o que faz -> nunca PERMITIR às cegas (PRD §1, blind signing)
     "PROMPT_INJECTION": 40,   # sozinho já tira o PERMITIR: agente manipulado não assina (PRD, história 4)
+    "INTENT_MISMATCH": 40,    # a transação faz mais do que a mensagem pediu (Jev): tira o PERMITIR
+    "CLASSIFIER_UNAVAILABLE": 40,   # tx de agente com contexto e classificador fora: fail-closed
     "HIGH_VALUE": 15,
 }
+# Sinais que vêm (ou podem vir) da camada probabilística. Nenhum deles participa de regra de BLOQUEAR.
+CLASSIFIER_CODES = frozenset({"PROMPT_INJECTION", "INTENT_MISMATCH", "CLASSIFIER_UNAVAILABLE"})
 NEW_CONTRACT_DAYS = 7         # TRD §4: "contrato < 7 dias"
 HIGH_VALUE_USD = 1000
 
@@ -57,6 +65,66 @@ def detect_injection(context: str | None) -> str | None:
 
 def _short(a: str) -> str:
     return f"{a[:6]}…{a[-4:]}"
+
+
+def _p(x: float) -> str:
+    return f"{x:.2f}".replace(".", ",")
+
+
+def classify_context(tx: dict, acao_real: str, offline: dict) -> tuple[dict | None, list[dict], list[str], int | None]:
+    """Camada probabilística (docs/07 §4.3): regex OU Jev -> sinais, por limiar fixo em código.
+    Devolve (classifier para o relatório, sinais, evidências, latência do Jev em ms)."""
+    context = tx.get("context")
+    if not context:
+        return None, [], [], None
+    signals: list[dict] = []
+    evidence: list[str] = []
+
+    def signal(code: str, ev: list[str], sources: list[str], probability: float | None = None):
+        signals.append({"code": code, "weight": WEIGHTS[code], "evidence": "; ".join(ev),
+                        "sources": sources, "probability": probability})
+
+    snippet = detect_injection(context)
+    out = jev.classify(context, acao_real, offline)
+    classifier = {"provider": "jev", "model": jev.JEV_MODEL, "status": "off",
+                  "thresholds": {"injection": jev.INJECTION_T, "intent": jev.INTENT_T},
+                  "injection_p": None, "intent": None, "intent_confidence": None,
+                  "intent_probabilities": None, "error": None}
+    latency = None
+    if out is None:
+        evidence.append("classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex")
+    elif "error" in out:
+        latency = out.get("latency_ms")
+        classifier.update(status="error", error=out["error"])
+        evidence.append(f"classificador Jev: indisponível ({out['error']}); contexto checado só por regex")
+    else:
+        latency = out.get("latency_ms")
+        classifier.update(status="ok", model=out["model"], injection_p=out["injection_p"], intent=out["intent"],
+                          intent_confidence=out["intent_confidence"], intent_probabilities=out["intent_probabilities"])
+        evidence.append(f"classificador Jev ({out['model']}): injeção p={_p(out['injection_p'])} "
+                        f"(limiar {_p(jev.INJECTION_T)}); intenção {out['intent']} "
+                        f"com confiança {_p(out['intent_confidence'])} (limiar {_p(jev.INTENT_T)})")
+
+    ok = classifier["status"] == "ok"
+    inj_ev, inj_src = [], []
+    if snippet:
+        inj_ev.append(f"o contexto contém instruções típicas de manipulação de agente: “{snippet}”")
+        inj_src.append("rule")
+    if ok and classifier["injection_p"] >= jev.INJECTION_T:
+        inj_ev.append(f"classificador Jev: probabilidade de injeção {_p(classifier['injection_p'])} ≥ {_p(jev.INJECTION_T)}")
+        inj_src.append("classifier")
+    if inj_src:
+        signal("PROMPT_INJECTION", inj_ev, inj_src, classifier["injection_p"] if ok else None)
+    if ok and classifier["intent"] == "divergente" and classifier["intent_confidence"] >= jev.INTENT_T:
+        signal("INTENT_MISMATCH",
+               [f"classificador Jev: a ação real diverge do que a mensagem pede "
+                f"(confiança {_p(classifier['intent_confidence'])} ≥ {_p(jev.INTENT_T)})"],
+               ["classifier"], classifier["intent_confidence"])
+    if classifier["status"] == "error" and tx.get("source") == "agent":
+        signal("CLASSIFIER_UNAVAILABLE",
+               ["transação de agente com contexto e o classificador não respondeu: sem a segunda checagem, não há PERMITIR"],
+               ["rule"])
+    return classifier, signals, evidence, latency
 
 
 def threat_node(state: dict) -> dict:
@@ -151,25 +219,31 @@ def threat_node(state: dict) -> dict:
                 add("UNVERIFIED", f"código-fonte de {addr} não verificado no Etherscan")
         evidence.append(f"{label}: {', '.join(facts)} (fonte: {info.get('source', '?')})")
 
-    # 4) Mensagem que acompanha a transação: dado não confiável, analisado por regex (sem LLM)
-    snippet = detect_injection(tx.get("context"))
-    if snippet:
-        add("PROMPT_INJECTION", f"o contexto contém instruções típicas de manipulação de agente: “{snippet}”")
+    # 4) Mensagem que acompanha a transação: dado não confiável. Regex OU Jev, por limiar fixo.
+    #    O que sai daqui só pode tirar o PERMITIR (teto ALERTAR), nunca BLOQUEAR.
+    facts = "; ".join(ev for code in ("UNLIMITED_APPROVAL", "CONTRACT_NEW", "UNVERIFIED", "HIGH_VALUE")
+                      for ev in found.get(code, []))
+    acao_real = d["summary_ptbr"] + (f" ({facts})" if facts else "")
+    classifier, ctx_signals, ctx_evidence, jev_ms = classify_context(tx, acao_real, offline)
+    evidence += ctx_evidence
 
     # 5) RAG: padrões de golpe parecidos com o que foi encontrado
     try:
-        docs = search_patterns([*found, d["action"], tx.get("context") or ""])
+        docs = search_patterns([*found, *(s["code"] for s in ctx_signals), d["action"], tx.get("context") or ""])
     except Exception as e:  # noqa: BLE001
         docs = []
         errors.append(f"threat: RAG indisponível ({type(e).__name__})")
     if docs:
         evidence.append("padrões conhecidos (RAG): " + "; ".join(p["title"] for p in docs))
 
-    signals = [{"code": c, "weight": WEIGHTS[c], "evidence": "; ".join(ev)} for c, ev in found.items()]
+    signals = [{"code": c, "weight": WEIGHTS[c], "evidence": "; ".join(ev), "sources": ["rule"], "probability": None}
+               for c, ev in found.items()] + ctx_signals
     risk = min(100, sum(s["weight"] for s in signals))
     return {
-        "threat": {"signals": signals, "risk_score": risk, "patterns": [p["title"] for p in docs], "evidence": evidence},
+        "threat": {"signals": signals, "risk_score": risk, "patterns": [p["title"] for p in docs],
+                   "evidence": evidence, "classifier": classifier},
         "contracts": contracts,
         "rag_docs": docs,
         "errors": errors,
+        "timings": {"jev": jev_ms} if jev_ms is not None else {},
     }

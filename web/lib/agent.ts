@@ -40,6 +40,7 @@ export function naiveAgent(message: string): AgentIntent {
     data: encodeTransfer(to, toUnits(amount, USDT_DECIMALS)),
     context: `Mensagem recebida pelo agente: ${message}`,
     owner_id: "agent-wallet",
+    source: "agent",
   };
   return { to, amount, tx };
 }

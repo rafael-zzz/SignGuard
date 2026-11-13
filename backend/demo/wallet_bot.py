@@ -38,7 +38,7 @@ def naive_agent(message: str) -> dict:
         amount = Decimal(m.group(1).replace(",", ".")) if m else Decimal(10)
     data = "0xa9059cbb" + encode(["address", "uint256"], [to_checksum_address(to), int(amount * 10**6)]).hex()
     return {"chain_id": 1, "from": AGENT, "to": USDT, "value": "0", "data": data,
-            "context": f"Mensagem recebida pelo agente: {message}", "owner_id": "agent-wallet"}
+            "context": f"Mensagem recebida pelo agente: {message}", "owner_id": "agent-wallet", "source": "agent"}
 
 
 def may_sign(verdict: dict | None) -> bool:

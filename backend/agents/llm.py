@@ -4,9 +4,9 @@ Sem chave ou com OFFLINE=1 -> os agentes usam só o caminho determinístico (mod
 Saída estruturada: a resposta é validada contra um schema Pydantic. Fora do schema -> 1 nova
 tentativa; se falhar de novo, devolve None e o agente segue só com regras (docs/03-app-flow.md).
 
-Latência (TRD §7, "LLMs (decoder + judge)"): as chamadas de uma mesma análise dividem um único
-orçamento de tempo, LLM_TIMEOUT. O Decodificador usa no máximo DECODER_BUDGET_S e o Juiz fica com
-o que sobrar. Quem estoura o tempo cai para as regras: a análise nunca espera o LLM além do orçamento."""
+O LLM está fora do caminho da decisão (docs/07 §5): só o nó `explain` chama este cliente, depois que
+o veredito já foi fechado em código. Latência (TRD §7): uma chamada por análise, com teto LLM_TIMEOUT
+(4 s). Estourou -> vale o texto do template; o veredito é o mesmo."""
 import json
 import re
 import threading
@@ -27,12 +27,11 @@ MODELS = [m.strip() for m in (LLM_MODEL or "").split(",") if m.strip()]
 _model = 0
 _MODEL_GONE = re.compile(r"unavailable|not a valid model|no longer available|deprecated|does not exist|"
                          r"model not found|no endpoints found for", re.I)
-BUDGET_S = LLM_TIMEOUT              # tempo total de LLM por análise (decoder + judge)
-DECODER_BUDGET_S = BUDGET_S / 3     # o resumo é curto; a maior parte fica para a explicação do Juiz
+BUDGET_S = LLM_TIMEOUT              # teto de LLM por análise (uma chamada: a explicação)
 _MIN_CALL_S = 1.0                   # com menos que isso não vale abrir a chamada
 _COOLDOWN_S = 30.0          # após erro de rede/limite, não insiste: a demo não pode travar
 _cooldown_until = 0.0
-_MAX_TIMEOUTS = 2           # estouros de tempo seguidos (ex.: decoder e judge da mesma análise) também pausam
+_MAX_TIMEOUTS = 2           # estouros de tempo seguidos também pausam
 _timeouts = 0
 _client = None
 

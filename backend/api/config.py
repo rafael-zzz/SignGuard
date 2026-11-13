@@ -25,7 +25,15 @@ LLM_API_KEY = env("OPENROUTER_API_KEY")
 LLM_BASE_URL = env("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 # Um modelo ou vários separados por vírgula: se o primeiro deixar de existir (os :free mudam), usa o próximo.
 LLM_MODEL = env("LLM_MODEL", "google/gemma-4-26b-a4b-it")
-LLM_TIMEOUT = float(env("LLM_TIMEOUT", "6"))        # tempo total de LLM por análise (decoder + judge) — TRD §7
+# O LLM só redige a explicação, depois que o veredito já foi decidido em código (docs/07 §5).
+# Teto da chamada de explicação: no máximo 4 s, mesmo que o .env peça mais. Estourou -> texto do template.
+LLM_TIMEOUT = min(float(env("LLM_TIMEOUT", "4")), 4.0)
+
+# Classificador Jev (TypeSafe AI): probabilidade calibrada para o texto do contexto (docs/07 §4).
+# Sem chave -> fica desligado e vale só o regex. A versão é fixada: entra no relatório atestado.
+TYPESAFE_API_KEY = env("TYPESAFE_API_KEY")
+JEV_MODEL = env("JEV_MODEL", "jev-1.14.0")
+JEV_TIMEOUT = float(env("JEV_TIMEOUT", "2"))
 
 # RAG (padrões de golpe): "chroma" (cai para "tags" se o chromadb faltar ou falhar) ou "tags"
 RAG_BACKEND = env("RAG_BACKEND", "chroma")

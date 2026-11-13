@@ -1,22 +1,16 @@
 """Agente Decodificador. Dono: Rafael (tools: Dávila).
 Contrato (TRD §3): entrada `tx`; ferramentas `decode_calldata` e `simulate_tx`;
 saída {action, token, spender, amount, is_unlimited, balance_changes[], summary_ptbr}.
-Os fatos vêm do código. O LLM só reescreve o resumo em linguagem simples, e o texto dele
-só é aceito se passar no schema e bater com os fatos decodificados."""
+100% código, sem LLM (docs/07 §5): os fatos vêm da decodificação e o resumo em PT-BR vem de
+template, que cobre todas as ações do escopo. Fora do escopo -> "unknown" (fail-closed no Juiz)."""
 import re
-import time
 
-from agents import llm
-from agents.prompts import DECODER_SYSTEM, DecoderOut, decoder_user_prompt
 from api.config import MAINNET_RPC_URL, OFFLINE
 from tools.decode import decode_calldata, known_contract_name
 from tools.etherscan import contract_info
 from tools.simulate import simulate_tx
 
-_URL = re.compile(r"https?://|www\.", re.I)
 _ADDR = re.compile(r"0x[a-fA-F0-9]{40}")
-_ADVICE = re.compile(r"\bassin[ea]\b|pode assinar|assinar agora|\bsegur[oa]\b|sem risco|confi[ea]\b", re.I)
-_UNLIMITED = re.compile(r"ilimitad|sem limite|tod[oa]s|tudo|qualquer (quantia|valor)", re.I)
 
 
 def _short(a: str | None) -> str:
@@ -64,17 +58,6 @@ def _addresses(value) -> list[str]:
     return []
 
 
-def summary_is_grounded(summary: str, d: dict, tx: dict) -> bool:
-    """O resumo do LLM não pode trazer link, endereço que não está na transação,
-    nem esconder que a permissão é ilimitada."""
-    if _URL.search(summary) or _ADVICE.search(summary):   # o Decodificador descreve; quem recomenda é o Juiz
-        return False
-    if d["is_unlimited"] and not _UNLIMITED.search(summary):
-        return False
-    known = {(a or "").lower() for a in (tx.get("from"), tx.get("to"), d.get("token"), d.get("spender"), d.get("recipient"))}
-    return all(a.lower() in known for a in _ADDR.findall(summary))
-
-
 def decoder_node(state: dict) -> dict:
     tx = state["tx"]
     offline = state.get("offline") or {}
@@ -112,21 +95,6 @@ def decoder_node(state: dict) -> dict:
     d.pop("recipient_name", None)
     to_contract = d.pop("to_contract", None)
 
-    used_llm, llm_seconds = False, 0.0
-    if d["action"] != "unknown":  # sem decodificação não há fato para o LLM reescrever
-        facts = {k: v for k, v in d.items() if k != "raw_args"}
-        started = time.monotonic()
-        out, err = llm.chat_structured(DECODER_SYSTEM, decoder_user_prompt(facts, summary), DecoderOut,
-                                       timeout=llm.DECODER_BUDGET_S)
-        llm_seconds = time.monotonic() - started
-        if err:
-            errors.append(f"decoder: {err}")
-        if out:
-            if summary_is_grounded(out.summary_ptbr, d, tx):
-                summary, used_llm = out.summary_ptbr, True
-            else:
-                errors.append("decoder: resumo do LLM descartado por não bater com os dados decodificados")
-
     decoded = {
         "action": d["action"], "function": d["function"], "token": d["token"],
         "token_symbol": d["token_symbol"], "spender": d["spender"], "recipient": d["recipient"],
@@ -139,7 +107,5 @@ def decoder_node(state: dict) -> dict:
                        "balance_changes_source": sim.get("balance_changes_source")},
         "involved": involved,
         "to_contract": to_contract,
-        "llm_calls": [("decoder", used_llm)],
-        "llm_seconds": llm_seconds,
         "errors": errors,
     }

@@ -14,6 +14,8 @@ class TxInput(BaseModel):
     data: str = Field(default="0x", pattern=r"^0x(?:[0-9a-fA-F]{2})*$")
     value: str = Field(default="0", pattern=r"^(0|[1-9][0-9]*)$")                 # wei, em string
     context: str | None = None       # texto livre do usuário/bot -> SEMPRE não confiável
+    # Quem montou a transação. "agent": com contexto e classificador fora, não há PERMITIR (docs/07 §3).
+    source: Literal["user", "agent"] = "user"
     owner_id: str = Field(default="default", min_length=1, max_length=128)        # de quem é a política aplicada
 
     @field_validator("value")
@@ -62,10 +64,28 @@ class Decoded(BaseModel):
     summary_ptbr: str
 
 
+Source = Literal["rule", "classifier"]   # "rule" = determinístico (código) · "classifier" = probabilístico (Jev)
+
+
 class Signal(BaseModel):
     code: str                        # CONTRACT_NEW, UNVERIFIED, BLOCKLISTED, UNLIMITED_APPROVAL, ...
     weight: int = Field(ge=0, le=100)  # 0-100
     evidence: str
+    sources: list[Source] = ["rule"]
+    probability: float | None = Field(default=None, ge=0, le=1)   # só em sinal de classificador
+
+
+class Classifier(BaseModel):
+    """O que a camada probabilística viu. Entra no report_hash: dá para auditar depois (docs/07 §6.4)."""
+    provider: str                    # "jev"
+    model: str                       # versão fixada, ex.: jev-1.14.0
+    status: Literal["ok", "off", "error"]   # off = sem chave/OFFLINE (só regex) · error = não respondeu
+    thresholds: dict[str, float]     # limiares fixos em código: {"injection": 0.80, "intent": 0.70}
+    injection_p: float | None = Field(default=None, ge=0, le=1)
+    intent: Literal["consistente", "divergente", "sem_intencao"] | None = None
+    intent_confidence: float | None = Field(default=None, ge=0, le=1)
+    intent_probabilities: dict[str, float] | None = None
+    error: str | None = None
 
 
 class ThreatReport(BaseModel):
@@ -73,6 +93,7 @@ class ThreatReport(BaseModel):
     risk_score: int = Field(default=0, ge=0, le=100)
     patterns: list[str] = []         # padrões de golpe recuperados (RAG)
     evidence: list[str] = []         # o que o agente consultou (TRD §3), inclusive fontes indisponíveis
+    classifier: Classifier | None = None   # None = transação sem contexto (o classificador não se aplica)
 
 
 class PolicyResult(BaseModel):
@@ -81,18 +102,26 @@ class PolicyResult(BaseModel):
     warnings: list[str] = []         # regra que não pôde ser conferida (ex.: token sem preço x limite em USD)
 
 
+class ReasonDetail(BaseModel):
+    text: str
+    sources: list[Source] = ["rule"]     # selo na tela: REGRA e/ou CLASSIFICADOR
+    probability: float | None = Field(default=None, ge=0, le=1)
+
+
 class Verdict(BaseModel):
     analysis_id: str
     verdict: Literal["ALLOW", "WARN", "BLOCK"]
     risk_score: int = Field(ge=0, le=100)
     explanation_ptbr: str
     reasons: list[str]
+    reason_details: list[ReasonDetail] = []   # mesmos motivos de `reasons`, com a origem de cada um
     decoded: Decoded
     threat: ThreatReport
     policy: PolicyResult
     intent_hash: str                 # keccak256(abi.encode(chainId, from, to, value, data))
     report_hash: str                 # keccak256 do JSON canônico do relatório
-    llm_used: bool = False
+    llm_used: bool = False           # True = o LLM reescreveu a explicação (nunca o veredito)
+    timings_ms: dict[str, int] = {}  # por nó + "jev", "decision" (até o veredito) e "total"
 
 
 class ForensicRequest(BaseModel):

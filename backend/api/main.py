@@ -11,7 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from agents import llm
 from agents.forensic import investigate
-from agents.graph import analyze
+from agents.graph import analyze, latency_stats
+from tools import jev
 from . import attest as attest_mod
 from . import db
 from .auth import Owner, require_owner, demo_enabled
@@ -38,7 +39,10 @@ def _fixtures() -> dict[str, dict]:
 
 @app.get("/health")
 def health():
-    return {"ok": True, "offline": OFFLINE, "demo_mode": demo_enabled(), "llm": llm.available(), "attest_onchain": not OFFLINE and attest_mod.configured()}
+    return {"ok": True, "offline": OFFLINE, "demo_mode": demo_enabled(), "llm": llm.available(),
+            "classifier": {"provider": "jev", "model": jev.JEV_MODEL, "enabled": jev.enabled()},
+            "latency_ms": latency_stats(),   # decisão (até o veredito) das análises deste processo; None = nenhuma ainda
+            "attest_onchain": not OFFLINE and attest_mod.configured()}
 
 
 @app.get("/scenarios")

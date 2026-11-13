@@ -40,12 +40,13 @@ flowchart LR
 | Nó | Entrada | Ferramentas | Saída (JSON) |
 |---|---|---|---|
 | decoder | `tx` | `simulate_tx`, `decode_calldata` | `{action, token, spender, amount, is_unlimited, balance_changes[], summary_ptbr}` |
-| threat | `tx`, `decoded` | `contract_info`, `check_blocklist`, `search_patterns` | `{signals[], risk_score, evidence[]}` |
+| threat | `tx`, `decoded` | `contract_info`, `check_blocklist`, `search_patterns`, `jev.classify` | `{signals[], risk_score, evidence[], classifier}` |
 | policy | `tx`, `decoded`, `policy` | — (código puro) | `{violations[], allowed: bool}` |
-| judge | tudo acima | — | `{verdict, risk_score, explanation_ptbr, reasons[]}` |
+| judge | tudo acima | — (código puro, sem LLM) | `{verdict, risk_score, reasons[], reason_details[]}` |
+| explain | `verdict` | LLM (opcional, teto de 4 s) | `explanation_ptbr` (só texto; não altera o veredito) |
 | forensic (mock) | `tx_hash` | `trace_funds` | relatório markdown |
 
-Execução: `decoder` → (`threat` ∥ `policy`) → `judge` → `attest` (opcional).
+Execução: `decoder` → (`threat` ∥ `policy`) → `judge` → `explain` → `attest` (opcional). O `decoder` não usa LLM: o resumo vem de template.
 
 ## 4. Regras de decisão do Juiz
 - Qualquer violação de política → **BLOQUEAR** (não negociável pelo LLM).

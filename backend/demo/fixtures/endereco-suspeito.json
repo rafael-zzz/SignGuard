@@ -9,7 +9,8 @@
     "value": "0",
     "data": "0xa9059cbb000000000000000000000000bad0000000000000000000000000000000c0ffee0000000000000000000000000000000000000000000000000000000011e1a300",
     "context": "Atendente do 'suporte' no Instagram pediu para mover os fundos para uma carteira segura.",
-    "owner_id": "default"
+    "owner_id": "default",
+    "source": "user"
   },
   "offline": {
     "simulation_ok": true,
