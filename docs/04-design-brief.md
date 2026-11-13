@@ -32,10 +32,11 @@ Em 5 segundos, qualquer pessoa entende **o que a transação faz** e **se deve a
 - Hash → relatório em markdown + botão copiar.
 
 ## Identidade visual
-- Nome: **SignGuard**. Ícone: escudo/olho.
-- Tema escuro (combina com cripto e com o AKCIT): fundo `#0B0B12`, superfície `#16161F`, primária `#7C3AED` (roxo), texto `#E5E7EB`.
-- Status: verde `#22C55E`, amarelo `#EAB308`, vermelho `#EF4444`.
-- Tipografia: Inter (UI), JetBrains Mono (endereços/hashes).
+Fonte da verdade: **[design-system.md](design-system.md)** (tokens em `web/app/globals.css`, componentes base em `web/components/ui.tsx`).
+- Nome: **SignGuard**. Ícone: escudo.
+- Monocromático de alto contraste: header preto com grain (`ink-950`) + "sheet" branca (`paper`) subindo por cima com raio 28px.
+- Cor **só no status**: verde `#22B55A` (Permitir), âmbar `#F5A524` (Alertar), vermelho `#E5484D` (Bloquear). Todo o resto preto/branco; saídas de saldo em preto, não vermelho.
+- Tipografia: Instrument Serif (títulos display), Manrope (UI), JetBrains Mono (endereços/hashes).
 - Endereços sempre truncados `0x1234…abcd` com copiar.
 
 ## Tom de voz

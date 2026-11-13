@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+import { ArrowUpRight, Stamp } from "lucide-react";
 import { attest } from "@/lib/api";
+import { OutlineButton } from "./ui";
 
 export default function AttestButton({ analysisId }: { analysisId: string }) {
   const [msg, setMsg] = useState<string | null>(null);
@@ -23,20 +25,20 @@ export default function AttestButton({ analysisId }: { analysisId: string }) {
   }
 
   return (
-    <div>
-      <button className="btn" onClick={onClick} disabled={busy}>
+    <div className="grid justify-items-start gap-2 sm:justify-items-end">
+      <OutlineButton icon={Stamp} onClick={onClick} disabled={busy}>
         {busy ? "Registrando…" : "Registrar atestado on-chain"}
-      </button>
+      </OutlineButton>
       {msg &&
         (msg.startsWith("http") ? (
-          <p>
-            <a href={msg} target="_blank" rel="noopener noreferrer" className="explorer-link">
-              Ver no explorer ↗
+          <p className="text-caption text-text-tertiary">
+            <a href={msg} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-semibold text-text-primary underline-offset-2 hover:underline">
+              Ver no explorer <ArrowUpRight size={12} />
             </a>{" "}
-            <span className="muted small">confirmando na blockchain (~15 s)</span>
+            · confirmando na blockchain (~15 s)
           </p>
         ) : (
-          <p className="muted">{msg}</p>
+          <p className="text-caption text-text-tertiary">{msg}</p>
         ))}
     </div>
   );

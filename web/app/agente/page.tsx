@@ -5,13 +5,14 @@
 // monta a transação. A análise é real: POST /analyze com a mensagem em `context`. Quem detecta a manipulação
 // e decide o veredito é o backend, nunca o front.
 import { useState } from "react";
-import BotChat, { type ChatMsg, type Suggestion } from "@/components/BotChat";
+import { RotateCcw } from "lucide-react";
+import BotChat, { type ChatMsg, type ChatTone, type Suggestion } from "@/components/BotChat";
 import GuardPanel from "@/components/GuardPanel";
+import { OutlineButton, Overline, Sheet, shortHash } from "@/components/ui";
 import { naiveAgent } from "@/lib/agent";
 import { analyzeTx } from "@/lib/api";
-import type { Verdict } from "@/lib/types";
+import type { Verdict, VerdictCode } from "@/lib/types";
 
-const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const INTRO: ChatMsg[] = [
@@ -29,7 +30,7 @@ const SUGGESTIONS: Suggestion[] = [
   },
 ];
 
-const ICON = { ALLOW: "🟢", WARN: "🟡", BLOCK: "🔴" } as const;
+const TONE: Record<VerdictCode, ChatTone> = { ALLOW: "ok", WARN: "warn", BLOCK: "block" };
 
 export default function Page() {
   const [messages, setMessages] = useState<ChatMsg[]>(INTRO);
@@ -49,7 +50,7 @@ export default function Page() {
       await wait(600);
       push({
         role: "bot",
-        text: `Certo! Montando a transferência de ${Number(amount).toLocaleString("pt-BR")} USDT para ${short(to)}. Antes de assinar, consulto o SignGuard.`,
+        text: `Certo! Montando a transferência de ${Number(amount).toLocaleString("pt-BR")} USDT para ${shortHash(to)}. Antes de assinar, consulto o SignGuard.`,
       });
 
       setChecking(true);
@@ -58,17 +59,14 @@ export default function Page() {
       setVerdict(v);
 
       if (v.verdict === "ALLOW") {
-        push({ role: "system", text: `${ICON.ALLOW} SignGuard autorizou. O agente assinou e enviou.` });
+        push({ role: "system", tone: TONE.ALLOW, text: "SignGuard autorizou. O agente assinou e enviou." });
       } else {
-        push({
-          role: "system",
-          text: `${ICON[v.verdict]} SignGuard vetou a transação. O agente NÃO assinou.`,
-        });
+        push({ role: "system", tone: TONE[v.verdict], text: "SignGuard vetou a transação. O agente NÃO assinou." });
         push({ role: "bot", text: "Não consegui concluir: o SignGuard não liberou essa transação." });
       }
     } catch (e) {
       setChecking(false);
-      push({ role: "system", text: `Erro: ${(e as Error).message}` });
+      push({ role: "system", tone: "block", text: `Erro: ${(e as Error).message}` });
     } finally {
       setBusy(false);
     }
@@ -82,27 +80,33 @@ export default function Page() {
 
   return (
     <main>
-      <header className="hero">
-        <span className="eyebrow">Demo · Agente-carteira</span>
-        <h1>
-          O agente foi enganado. <span className="grad">O SignGuard não.</span>
+      <header className="pb-10 pt-6 sm:pb-14 sm:pt-10">
+        <p className="mb-3 text-overline font-semibold uppercase text-on-dark-muted">Demo · Agente-carteira</p>
+        <h1 className="max-w-xl font-serif text-display sm:text-[52px] sm:leading-[56px]">
+          O agente foi enganado. <span className="text-on-dark-muted">O SignGuard não.</span>
         </h1>
-        <p className="muted">
+        <p className="mt-4 max-w-md text-body text-on-dark-muted">
           Mande uma instrução manipulada ao agente e veja o veto em tempo real antes de qualquer assinatura.
         </p>
       </header>
 
-      <div className="grid grid-2">
-        <BotChat messages={messages} onSend={onSend} busy={busy} suggestions={SUGGESTIONS} />
-        <div className="grid" style={{ alignContent: "start" }}>
-          <GuardPanel v={verdict} loading={checking} />
-          <div>
-            <button type="button" className="btn btn-ghost" onClick={reset} disabled={busy}>
-              Reiniciar demo
-            </button>
+      <Sheet title="Chat do agente" action={<span />} className="-mx-4 min-h-[60vh] sm:mx-0">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="min-w-0">
+            <Overline>Conversa</Overline>
+            <BotChat messages={messages} onSend={onSend} busy={busy} suggestions={SUGGESTIONS} />
+          </div>
+          <div className="grid min-w-0 grid-cols-1 content-start gap-3">
+            <Overline>Painel do SignGuard</Overline>
+            <GuardPanel v={verdict} loading={checking} />
+            <div>
+              <OutlineButton icon={RotateCcw} onClick={reset} disabled={busy}>
+                Reiniciar demo
+              </OutlineButton>
+            </div>
           </div>
         </div>
-      </div>
+      </Sheet>
     </main>
   );
 }

@@ -1,8 +1,33 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
+import { Chip, PrimaryButton } from "./ui";
 
-export type ChatMsg = { role: "user" | "bot" | "system"; text: string };
+export type ChatTone = "ok" | "warn" | "block";
+export type ChatMsg = { role: "user" | "bot" | "system"; text: string; tone?: ChatTone };
 export type Suggestion = { label: string; text: string };
+
+const toneDot: Record<ChatTone, string> = { ok: "bg-positive", warn: "bg-warning", block: "bg-negative" };
+
+export function ChatBubble({ role, text, tone }: ChatMsg) {
+  if (role === "system")
+    return (
+      <div className="mx-auto inline-flex max-w-full items-center gap-2 px-2 py-1 text-center text-caption text-text-tertiary [overflow-wrap:anywhere]">
+        {tone && <span className={clsx("size-1.5 shrink-0 rounded-full", toneDot[tone])} />}
+        {text}
+      </div>
+    );
+  return (
+    <div
+      className={clsx(
+        "max-w-[85%] animate-rise rounded-lg px-3.5 py-2.5 text-body-sm [overflow-wrap:anywhere]",
+        role === "user" ? "ml-auto rounded-br-sm bg-ink-950 text-on-dark" : "mr-auto rounded-bl-sm bg-paper-100 text-text-primary",
+      )}
+    >
+      {text}
+    </div>
+  );
+}
 
 export default function BotChat({
   messages,
@@ -16,10 +41,12 @@ export default function BotChat({
   suggestions?: Suggestion[];
 }) {
   const [text, setText] = useState("");
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    // rola só a caixa do chat, sem arrastar a página inteira
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   function send() {
@@ -29,22 +56,22 @@ export default function BotChat({
   }
 
   return (
-    <div className="card grid">
-      <div className="chat">
+    <div className="grid min-w-0 grid-cols-1 gap-3">
+      <div
+        ref={listRef}
+        className="flex max-h-[400px] min-h-64 flex-col gap-2 overflow-y-auto rounded-lg border border-paper-border p-3"
+      >
         {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
-            {m.text}
-          </div>
+          <ChatBubble key={i} {...m} />
         ))}
-        <div ref={endRef} />
       </div>
 
       {suggestions.length > 0 && (
-        <div className="chips">
+        <div className="flex flex-wrap gap-2">
           {suggestions.map((s) => (
-            <button key={s.label} type="button" className="btn btn-ghost" onClick={() => setText(s.text)} disabled={busy}>
+            <Chip key={s.label} active={text === s.text} onClick={() => !busy && setText(s.text)}>
               {s.label}
-            </button>
+            </Chip>
           ))}
         </div>
       )}
@@ -58,14 +85,13 @@ export default function BotChat({
             send();
           }
         }}
+        aria-label="Mensagem para o agente"
         placeholder="Ex.: pague 10 USDT ao fornecedor"
-        style={{ minHeight: 96 }}
+        className="min-h-24 w-full resize-y rounded-md border border-paper-border bg-paper-100 px-4 py-3 text-body-sm text-text-primary placeholder:text-text-tertiary focus:border-text-primary focus:outline-none"
       />
-      <div>
-        <button className={`btn ${busy ? "loading" : ""}`} onClick={send} disabled={busy || !text.trim()}>
-          {busy ? "Agente trabalhando…" : "Enviar ao agente"}
-        </button>
-      </div>
+      <PrimaryButton onClick={send} disabled={!text.trim()} loading={busy}>
+        {busy ? "Agente trabalhando…" : "Enviar ao agente"}
+      </PrimaryButton>
     </div>
   );
 }

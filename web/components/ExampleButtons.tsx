@@ -1,14 +1,16 @@
+"use client";
 import type { Scenario } from "@/lib/types";
+import { Chip } from "./ui";
 
 export default function ExampleButtons({
   scenarios, selected, onPick,
 }: { scenarios: Scenario[]; selected: string | null; onPick: (s: Scenario) => void }) {
   return (
-    <div className="chips">
+    <div className="flex flex-wrap gap-2">
       {scenarios.map((s) => (
-        <button key={s.id} className={`btn ${selected === s.id ? "" : "btn-ghost"}`} onClick={() => onPick(s)}>
+        <Chip key={s.id} active={selected === s.id} onClick={() => onPick(s)}>
           {s.label}
-        </button>
+        </Chip>
       ))}
     </div>
   );
