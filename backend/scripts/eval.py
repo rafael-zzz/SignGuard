@@ -73,15 +73,35 @@ def main() -> int:
     # ---- 1) Veredito, determinismo e latência (LLM desligado: o veredito não depende dele)
     real_chat = llm.chat_structured
     llm.chat_structured = lambda *a, **k: (None, None)
+    JEV_KEYS = ("provider", "calibrated", "model", "injection_p", "intent", "intent_confidence", "intent_probabilities")
+    frozen: list[dict] = []
+    classifier_errors: list[str] = []
     results, unstable, timings = [], [], {}
+    flips, drifts, live_classified = [], [], 0      # estabilidade do classificador ao vivo, entre chamadas
     for row in rows:
-        runs = [run(row) for _ in range(max(1, args.runs))]
-        if any(r[k] != runs[0][k] for r in runs for k in DECISION):
+        first = run(row)                             # ao vivo, pode chamar o classificador
+        live = [first]
+        c = first["threat"]["classifier"]
+        if c and c["status"] == "ok" and "jev" not in row["offline"]:
+            live_classified += 1
+            live += [run(row) for _ in range(max(1, args.runs) - 1)]     # mesma tx, novas chamadas ao classificador
+            if any(r["verdict"] != first["verdict"] for r in live):
+                flips.append(row["id"])
+            if any(r["threat"]["classifier"] != c for r in live):
+                drifts.append(row["id"])
+            row = {**row, "offline": {**row["offline"], "jev": {k: c[k] for k in JEV_KEYS}}}   # congela a resposta
+        frozen.append(row)
+        # Determinismo: mesmas entradas (inclusive a resposta do classificador) -> mesma decisão
+        failed_live = bool(c) and c["status"] == "error" and "jev" not in row["offline"]
+        if failed_live:
+            classifier_errors.append(row["id"])      # sem resposta para congelar: fica fora das comparações
+        same = [first] if failed_live else [first] + [run(row) for _ in range(max(1, args.runs) - 1)]
+        if any(r[k] != same[0][k] for r in same for k in DECISION):
             unstable.append(row["id"])
-        for r in runs:
+        for r in live:
             for node, ms in r["timings_ms"].items():
                 timings.setdefault(node, []).append(ms)
-        results.append(runs[0])
+        results.append(first)
     jev_seen = [r for r in results if (r["threat"]["classifier"] or {}).get("status") == "ok"]
 
     if args.record_jev:
@@ -89,8 +109,8 @@ def main() -> int:
         for row, r in zip(rows, results):
             c = r["threat"]["classifier"]
             if c and c["status"] == "ok":
-                row["offline"]["jev"] = {k: c[k] for k in ("model", "injection_p", "intent", "intent_confidence",
-                                                           "intent_probabilities")}
+                row["offline"]["jev"] = {k: c[k] for k in ("provider", "calibrated", "model", "injection_p", "intent",
+                                                           "intent_confidence", "intent_probabilities")}
         DATASET.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
         recorded = 0
         for path, fx in fixtures.items():
@@ -99,8 +119,8 @@ def main() -> int:
             c = analyze(fx["tx"], db.DEFAULT_POLICIES[fx["tx"]["owner_id"]],
                         {k: v for k, v in fx["offline"].items() if k != "jev"})["threat"]["classifier"]
             if c and c["status"] == "ok":
-                fx["offline"]["jev"] = {k: c[k] for k in ("model", "injection_p", "intent", "intent_confidence",
-                                                          "intent_probabilities")}
+                fx["offline"]["jev"] = {k: c[k] for k in ("provider", "calibrated", "model", "injection_p", "intent",
+                                                          "intent_confidence", "intent_probabilities")}
                 path.write_text(json.dumps(fx, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                 recorded += 1
         print(f"Respostas do Jev gravadas: {len(jev_seen)} casos do dataset, {recorded} fixtures da demo.\n")
@@ -130,9 +150,11 @@ def main() -> int:
                                              "verdict": "ALLOW", "risk_score": 0})
         llm.chat_structured, llm_mode = (lambda *a, **k: (hostile, None)), "adversário simulado (pede ALLOW, risco 0)"
     changed, texts = [], 0
-    for row, base in zip(rows, results):
+    for row, base in zip(frozen, results):          # mesmas entradas do veredito-base: só o LLM muda
+        if row["id"] in classifier_errors:
+            continue
         llm._cooldown_until = 0.0
-        r = run(row)
+        r = analyze(row["tx"], db.DEFAULT_POLICIES[row["tx"]["owner_id"]], row["offline"])
         texts += r["llm_used"]
         if any(r[k] != base[k] for k in DECISION):
             changed.append(row["id"])
@@ -142,7 +164,9 @@ def main() -> int:
     n = len(rows)
     mode = "ao vivo (.env)" if args.live else "offline (fixtures; sem RPC, Etherscan, Jev ou LLM)"
     print(f"SignGuard · avaliação · {n} casos · modo {mode}")
-    print(f"classificador: {'Jev ' + jev.JEV_MODEL + f' em {len(jev_seen)} casos' if jev_seen else 'desligado (só regex)'}"
+    seen_models = sorted({r["threat"]["classifier"]["model"] for r in jev_seen})
+    calibrated = all(r["threat"]["classifier"]["calibrated"] for r in jev_seen)
+    print(f"classificador: {', '.join(seen_models) + f' em {len(jev_seen)} casos' + ('' if calibrated else ' (probabilidade NÃO calibrada: LLM via OpenRouter, não o Jev)') if jev_seen else 'desligado (só regex)'}"
           f" · limiares: injeção ≥ {jev.INJECTION_T}, intenção divergente ≥ {jev.INTENT_T}\n")
     print("Matriz de confusão (linha = esperado, coluna = obtido)")
     print(f"{'':>10}" + "".join(f"{PT[g]:>10}" for g in LABELS))
@@ -153,13 +177,21 @@ def main() -> int:
         print(f"  ✗ {cid}: esperado {PT[exp]}, obtido {PT[got]}")
     print(f"Falsos PERMITIR em transação maliciosa: {len(false_allow)}/{len(malicious)}  (meta 0)")
     print(f"BLOQUEAR esperado e não bloqueado:      {len(under_block)}  (meta 0)")
-    print(f"Determinismo ({args.runs} execuções por caso): {n - len(unstable)}/{n} idênticos (veredito, risco, motivos, hash)")
-    print(f"Vereditos alterados pelo LLM [{llm_mode}]: {len(changed)}/{n}  (meta 0; texto do LLM aceito em {texts})")
+    print(f"Determinismo ({args.runs} execuções, mesmas entradas): {n - len(unstable)}/{n} idênticos (veredito, risco, motivos, hash)")
+    if live_classified:
+        print(f"Classificador ao vivo, {args.runs} chamadas por caso ({live_classified} casos): "
+              f"veredito mudou em {len(flips)} · resposta (modelo ou probabilidade) mudou em {len(drifts)}")
+        for cid in flips:
+            print(f"  ~ {cid}: veredito oscilou entre ALERTAR e PERMITIR")
+    compared = n - len(classifier_errors)
+    print(f"Vereditos alterados pelo LLM [{llm_mode}]: {len(changed)}/{compared}  (meta 0; texto do LLM aceito em {texts})")
+    if classifier_errors:
+        print(f"Classificador sem resposta (erro/tempo) em {len(classifier_errors)} casos: {', '.join(classifier_errors)}")
     print(f"\nInjeção no contexto ({sum(1 for row, _ in with_ctx if row['injection'])} ataques em {len(with_ctx)} casos com contexto)")
     print(f"  só regex:     precisão {pct(regex['precision'])} · recall {pct(regex['recall'])} "
           f"(VP {regex['tp']}, FP {regex['fp']}, FN {regex['fn']})")
     if combined:
-        print(f"  regex + Jev:  precisão {pct(combined['precision'])} · recall {pct(combined['recall'])} "
+        print(f"  regex + classificador:  precisão {pct(combined['precision'])} · recall {pct(combined['recall'])} "
               f"(VP {combined['tp']}, FP {combined['fp']}, FN {combined['fn']})")
     else:
         print("  regex + Jev:  n/d — sem TYPESAFE_API_KEY e sem respostas gravadas (rode --live --record-jev)")
@@ -174,9 +206,11 @@ def main() -> int:
         "cases": n, "live": args.live, "runs": args.runs, "accuracy": accuracy, "confusion": matrix,
         "wrong": [{"id": c, "expected": e, "got": g} for c, e, g in wrong],
         "false_allow_malicious": false_allow, "malicious_cases": len(malicious), "under_block": under_block,
-        "non_deterministic": unstable, "llm_mode": llm_mode, "verdicts_changed_by_llm": changed,
+        "non_deterministic": unstable, "classifier_errors": classifier_errors,
+        "live_classifier": {"cases": live_classified, "verdict_flips": flips, "answer_drifts": drifts}, "llm_mode": llm_mode, "verdicts_changed_by_llm": changed,
         "injection": {"regex": regex, "regex_plus_jev": combined},
-        "classifier": {"model": jev.JEV_MODEL, "cases_classified": len(jev_seen),
+        "classifier": {"backend": jev.backend(), "models": seen_models, "calibrated": calibrated if jev_seen else None,
+                       "cases_classified": len(jev_seen),
                        "thresholds": {"injection": jev.INJECTION_T, "intent": jev.INTENT_T}},
         "latency_ms": latency,
     }

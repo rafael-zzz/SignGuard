@@ -40,7 +40,8 @@ def _fixtures() -> dict[str, dict]:
 @app.get("/health")
 def health():
     return {"ok": True, "offline": OFFLINE, "demo_mode": demo_enabled(), "llm": llm.available(),
-            "classifier": {"provider": "jev", "model": jev.JEV_MODEL, "enabled": jev.enabled()},
+            "classifier": {"provider": jev.backend(), "model": jev.model_name(), "enabled": jev.enabled(),
+                           "calibrated": True},
             "latency_ms": latency_stats(),   # decisão (até o veredito) das análises deste processo; None = nenhuma ainda
             "attest_onchain": not OFFLINE and attest_mod.configured()}
 

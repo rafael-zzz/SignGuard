@@ -74,7 +74,7 @@ Detalhes, motivos e código de referência em **[07-alinhamento-jurado.md](07-al
 
 **Passo 0:** Rafael faz o merge da `feat/agents` → `main` antes de qualquer outra coisa.
 
-- [ ] Davi: pedir a chave do Jev (TypeSafe AI) ao jurado e colocar `TYPESAFE_API_KEY` no `.env`
+- [x] Davi: pedir a chave do Jev (TypeSafe AI) ao jurado e colocar `TYPESAFE_API_KEY` no `.env` — dispensado: o Jev roda pelo OpenRouter com a `OPENROUTER_API_KEY`
 - [ ] Rafael: merge `feat/agents` → `main` — feito na branch `feat/jev-implentation` (conflitos resolvidos); falta o PR para a `main`
 - [x] Rafael: `judge.py` — LLM não altera veredito nem risco; BLOCK só por regra (o LLM virou o nó `explain`, depois do veredito)
 - [x] Rafael: `decoder.py` — remover a chamada de LLM (fica o template)
@@ -83,8 +83,8 @@ Detalhes, motivos e código de referência em **[07-alinhamento-jurado.md](07-al
 - [x] Dávila: `backend/eval/dataset.jsonl` (40 casos) + `backend/scripts/eval.py` (matriz, falso-PERMITIR = 0, p50/p95) — rodar com `python -m scripts.eval`
 - [x] Davi: README — envelope de garantia + "o que não garantimos" + números do eval offline
 - [ ] Davi: slides "o probabilístico só filtra, o determinístico decide" + evidências (números do eval)
-- [x] Rafael (P1): `tools/jev.py` + sinais `PROMPT_INJECTION` / `INTENT_MISMATCH` / `CLASSIFIER_UNAVAILABLE` (teto ALERTAR) — testado com respostas simuladas; **ainda não chamou a API real do Jev (sem chave)**
-- [ ] Dávila (P1): gravar respostas do Jev em `offline.jev` nas fixtures; rodar o eval com o Jev e fixar os limiares — depende da chave: `python -m scripts.eval --live --record-jev`
+- [x] Rafael (P1): `tools/jev.py` + sinais `PROMPT_INJECTION` / `INTENT_MISMATCH` / `CLASSIFIER_UNAVAILABLE` (teto ALERTAR) — testado com respostas simuladas; Jev real chamado pelo OpenRouter (`/api/v1/systemone`, modelo `typesafe/jev-1.14`) com a `OPENROUTER_API_KEY`; eval ao vivo: recall de injeção 100%, decisão p50 514 ms
+- [ ] Dávila (P1): gravar respostas do Jev em `offline.jev` nas fixtures (`python -m scripts.eval --live --record-jev`) e fixar os limiares — eval com o Jev já rodou (`eval/results-live-jev.json`); gravação e ajuste de limiar pendentes
 - [x] Davi (P1): UI com selo REGRA / CLASSIFICADOR por motivo + tempo da análise
 
 | Horário | Atividade |

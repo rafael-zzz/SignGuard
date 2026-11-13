@@ -41,6 +41,12 @@
   "malicious_cases": 17,
   "under_block": [],
   "non_deterministic": [],
+  "classifier_errors": [],
+  "live_classifier": {
+    "cases": 0,
+    "verdict_flips": [],
+    "answer_drifts": []
+  },
   "llm_mode": "adversário simulado (pede ALLOW, risco 0)",
   "verdicts_changed_by_llm": [],
   "injection": {
@@ -54,7 +60,9 @@
     "regex_plus_jev": null
   },
   "classifier": {
-    "model": "jev-1.14.0",
+    "backend": null,
+    "models": [],
+    "calibrated": null,
     "cases_classified": 0,
     "thresholds": {
       "injection": 0.8,

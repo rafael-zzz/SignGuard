@@ -34,6 +34,17 @@ LLM_TIMEOUT = min(float(env("LLM_TIMEOUT", "4")), 4.0)
 TYPESAFE_API_KEY = env("TYPESAFE_API_KEY")
 JEV_MODEL = env("JEV_MODEL", "jev-1.14.0")
 JEV_TIMEOUT = float(env("JEV_TIMEOUT", "2"))
+# Por onde chamar o Jev. É o mesmo modelo e a mesma API System One nos dois caminhos:
+#   typesafe   = api.typesafe.ai com TYPESAFE_API_KEY (modelo JEV_MODEL)
+#   openrouter = openrouter.ai/api/v1/systemone com a OPENROUTER_API_KEY (modelo JEV_OPENROUTER_MODEL)
+#   off        = só regex
+# Padrão (auto): typesafe se houver chave; senão openrouter se houver chave; senão off.
+JEV_BACKEND = (env("JEV_BACKEND", "auto") or "auto").lower()
+# Versão fixada. Não use `~typesafe/jev-latest` nem `typesafe/jev-router` (este é um roteador de LLM de chat).
+JEV_OPENROUTER_MODEL = env("JEV_OPENROUTER_MODEL", "typesafe/jev-1.14")
+if JEV_OPENROUTER_MODEL == "typesafe/jev-router":   # valor de um .env antigo: não é o classificador
+    print("[config] JEV_OPENROUTER_MODEL=typesafe/jev-router é um roteador de chat, não o Jev; usando typesafe/jev-1.14")
+    JEV_OPENROUTER_MODEL = "typesafe/jev-1.14"
 
 # RAG (padrões de golpe): "chroma" (cai para "tags" se o chromadb faltar ou falhar) ou "tags"
 RAG_BACKEND = env("RAG_BACKEND", "chroma")
