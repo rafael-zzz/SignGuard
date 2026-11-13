@@ -5,6 +5,7 @@ Tudo aqui é código: sinais objetivos com peso. `evidence` registra o que foi c
 inclusive o que estava indisponível. Pesos ajustáveis em WEIGHTS."""
 import re
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 
 from agents.policy import fmt_age
 from api import db
@@ -69,9 +70,10 @@ def threat_node(state: dict) -> dict:
     def add(code: str, ev: str):
         found.setdefault(code, []).append(ev)
 
-    # 1) Blocklist: contrato chamado + contraparte (quem recebe a permissão ou os fundos)
-    counterparty = d.get("spender") or d.get("recipient")
-    addrs = sorted({a.lower() for a in (tx["to"], counterparty) if a})
+    # 1) Blocklist: contrato chamado e todo endereço que aparece na transação (quem recebe a permissão
+    #    ou os fundos, a origem de um transferFrom, os tokens do caminho de um swap)
+    addrs = sorted({a.lower() for a in (tx["to"], d.get("spender"), d.get("recipient"), d.get("token"),
+                                        *(state.get("involved") or [])) if a})
     try:
         hits = db.check_blocklist(addrs)
         evidence.append(f"blocklist: {len(addrs)} endereço(s) consultado(s), {len(hits)} ocorrência(s)")
@@ -84,7 +86,9 @@ def threat_node(state: dict) -> dict:
     # 2) Sinais que saem direto da decodificação/simulação
     if d["action"] == "approve" and d["is_unlimited"]:
         add("UNLIMITED_APPROVAL", f"approve ilimitado de {d.get('token_symbol')} para {d.get('spender')}")
-    if d["action"] == "unknown":
+    if d["action"] == "unknown" and state.get("to_contract"):
+        add("UNKNOWN_FUNCTION", f"ETH enviado direto ao contrato {state['to_contract']}, que executa código próprio ao receber")
+    elif d["action"] == "unknown":
         add("UNKNOWN_FUNCTION", f"função {d.get('function')} não reconhecida")
     if (d.get("amount_usd") or 0) >= HIGH_VALUE_USD:
         add("HIGH_VALUE", f"valor estimado US$ {fmt_br(d['amount_usd'], 2)}")
@@ -99,26 +103,39 @@ def threat_node(state: dict) -> dict:
         source = sim.get("balance_changes_source")
         evidence.append("simulação: executa sem reverter" + (f" (mudanças de saldo: {source})" if source else ""))
 
-    # 3) Reputação dos contratos envolvidos: quem recebe a permissão e o contrato chamado
+    # 3) Reputação dos contratos envolvidos: o contrato chamado, quem recebe a permissão e, em um
+    #    swap, os tokens do caminho. Contratos conhecidos também são consultados: a idade mínima da
+    #    política vale para todos. As consultas rodam em paralelo (orçamento de 4 s do TRD §7).
     targets: list[str] = []
     if d["action"] == "approve" and d.get("spender"):
         targets.append(d["spender"].lower())
     if d["action"] != "native_transfer":
         targets.append(tx["to"].lower())
-    contracts: dict[str, dict] = {}
-    for addr in dict.fromkeys(targets):
-        name = known_contract_name(addr)
-        if name:
-            evidence.append(f"contrato {_short(addr)}: conhecido ({name})")
-            continue
+    if d["action"] == "swap":
+        targets += [a for a in state.get("involved") or [] if a != (d.get("recipient") or "").lower()]
+    targets = list(dict.fromkeys(targets))
+
+    def lookup(addr: str) -> dict:
         try:
-            info = contract_info(addr, tx.get("chain_id", 1), offline)
+            return contract_info(addr, tx.get("chain_id", 1), offline)
         except Exception as e:  # noqa: BLE001
-            info = {"source": "indisponível"}
-            errors.append(f"threat: contract_info falhou ({type(e).__name__})")
-        age, verified = info.get("age_days"), info.get("verified")
-        if age is None and verified is None:
-            evidence.append(f"contrato {_short(addr)}: reputação indisponível (Etherscan fora ou sem chave)")
+            return {"source": "indisponível", "error": type(e).__name__}
+
+    with ThreadPoolExecutor(max_workers=max(1, min(4, len(targets)))) as pool:
+        infos = list(pool.map(lookup, targets))
+
+    contracts: dict[str, dict] = {}
+    for addr, info in zip(targets, infos):
+        name = known_contract_name(addr)
+        label = f"contrato {_short(addr)}" + (f" ({name})" if name else "")
+        if info.get("error"):
+            errors.append(f"threat: contract_info falhou ({info['error']})")
+        age, verified, is_contract = info.get("age_days"), info.get("verified"), info.get("is_contract")
+        if age is None and verified is None and is_contract is not True:
+            evidence.append(f"{label}: reputação indisponível (Etherscan fora ou sem chave)")
+            continue
+        if is_contract is False:
+            evidence.append(f"{label}: é uma carteira comum, não um contrato (fonte: {info.get('source', '?')})")
             continue
         contracts[addr] = info
         facts = []
@@ -126,11 +143,13 @@ def threat_node(state: dict) -> dict:
             facts.append(f"criado há {fmt_age(age)}")
             if age < NEW_CONTRACT_DAYS:
                 add("CONTRACT_NEW", f"contrato {addr} criado há {fmt_age(age)}")
+        else:
+            facts.append("idade não confirmada")
         if verified is not None:
             facts.append("código verificado" if verified else "código não verificado")
             if verified is False:
                 add("UNVERIFIED", f"código-fonte de {addr} não verificado no Etherscan")
-        evidence.append(f"contrato {_short(addr)}: {', '.join(facts)} (fonte: {info.get('source', '?')})")
+        evidence.append(f"{label}: {', '.join(facts)} (fonte: {info.get('source', '?')})")
 
     # 4) Mensagem que acompanha a transação: dado não confiável, analisado por regex (sem LLM)
     snippet = detect_injection(tx.get("context"))

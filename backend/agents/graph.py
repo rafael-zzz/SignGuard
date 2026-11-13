@@ -24,6 +24,8 @@ class SignGuardState(TypedDict, total=False):
     # Apoio interno entre nós (não vai para a API)
     offline: dict | None             # dados de fixture (modo demo/offline)
     simulation: dict                 # decoder -> threat: {ok, detail, attempted, balance_changes_source}
+    involved: list[str]              # decoder -> threat: endereços nos argumentos do calldata
+    to_contract: str | None          # decoder -> threat: ETH enviado direto a um contrato
     contracts: dict                  # threat -> judge: contract_info por endereço
     rag_docs: list[dict]             # threat -> judge: padrões de golpe recuperados
     llm_calls: Annotated[list[Any], operator.add]

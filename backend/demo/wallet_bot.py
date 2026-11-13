@@ -48,8 +48,10 @@ def may_sign(verdict: dict | None) -> bool:
 
 def request_verdict(tx: dict) -> dict:
     """Consulta o SignGuard. Levanta erro se a API falhar, a resposta fugir do contrato ou for de outra transação."""
+    token = os.getenv("SIGNGUARD_API_TOKEN", "").strip()
+    # Sem token (modo demo da API) o cabeçalho não é enviado: "Bearer " vazio é um cabeçalho inválido.
     response = httpx.post(f"{API}/analyze", json=tx, timeout=60,
-                          headers={"Authorization": "Bearer " + os.getenv("SIGNGUARD_API_TOKEN", "")})
+                          headers={"Authorization": f"Bearer {token}"} if token else {})
     response.raise_for_status()
     verdict = Verdict.model_validate(response.json())
     expected = intent_hash(tx["chain_id"], tx["from"], tx["to"], tx["value"], tx["data"])

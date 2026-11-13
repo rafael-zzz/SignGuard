@@ -6,9 +6,11 @@ Regras de decisão (TRD §4), todas em código:
   - approve ilimitado + contrato < 7 dias + não verificado -> BLOCK
   - risk_score >= 40                     -> WARN; senão ALLOW
   - simulação falhou (App Flow)          -> WARN
+  - função não identificada              -> WARN (não dá para explicar o efeito: nunca PERMITIR às cegas)
 O LLM redige a explicação e pode SUBIR o risco (até MAX_EXTRA_RISK); nunca baixa o piso.
 Ele usa o que sobrou do orçamento de tempo de LLM da análise (TRD §7); sem tempo, vale o texto das regras."""
 import re
+import time
 import uuid
 
 from agents import llm
@@ -26,7 +28,10 @@ TAIL = {"BLOCK": "Não assine.", "WARN": "Revise com cuidado antes de assinar.",
 _RECOMMENDATION = re.compile(
     r"(\s*\**(n[ãa]o assine|revise[^.!?]{0,40}antes de assinar|pode assinar)\**[.!]*)+\s*$", re.I)
 _ADDRESS = re.compile(r"0x[a-fA-F0-9]{40}\b")
-_REASSURING = re.compile(r"(?<!não )(?<!nao )\b(pode assinar|pode prosseguir|seguro assinar|é segur[oa] assinar)\b", re.I)
+# Texto que manda ou autoriza assinar. Vindo do LLM em um veredito que não é PERMITIR, é contradição.
+_REASSURING = re.compile(
+    r"(?<!não )(?<!nao )\b(assine|assinar agora|pode assinar|pode prosseguir|pode confirmar|pode aprovar|"
+    r"seguro assinar|é segur[oa]|e segur[oa]|sem risco|confie|aprove)\b", re.I)
 
 
 def rule_verdict(threat: dict, pol: dict) -> tuple[str, list[str]]:
@@ -49,6 +54,8 @@ def rule_verdict(threat: dict, pol: dict) -> tuple[str, list[str]]:
         at_least("BLOCK", "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).")
     if "SIMULATION_FAILED" in codes:   # estado de erro do App Flow: simulação falhou -> ALERTAR
         at_least("WARN", "Não foi possível simular a transação — não assine às cegas.")
+    if "UNKNOWN_FUNCTION" in codes:    # piso próprio: vale mesmo se o score ficar abaixo do limiar
+        at_least("WARN", "Não foi possível identificar o que a transação faz — não assine às cegas.")
     if "PROMPT_INJECTION" in codes:
         reasons.append("A mensagem que originou a transação tem sinais de manipulação (prompt injection).")
     r = threat["risk_score"]
@@ -98,9 +105,11 @@ def judge_node(state: dict) -> dict:
     risk = max(t["risk_score"], RISK_FLOOR[verdict])
 
     explanation, used_llm = None, False
+    started = time.monotonic()
     out, err = llm.chat_structured(
         JUDGE_SYSTEM, judge_user_prompt(d, t, p, verdict, risk, reasons, patterns, tx.get("context")), JudgeOut,
         timeout=llm.BUDGET_S - state.get("llm_seconds", 0.0))
+    llm_seconds = time.monotonic() - started
     if err:
         errors.append(f"judge: {err}")
     if out:
@@ -131,4 +140,4 @@ def judge_node(state: dict) -> dict:
         "report_hash": report_hash(report),
         "llm_used": used_llm or any(u for _, u in state.get("llm_calls", [])),
     }
-    return {"verdict": result, "errors": errors}
+    return {"verdict": result, "errors": errors, "llm_seconds": llm_seconds}

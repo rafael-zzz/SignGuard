@@ -29,8 +29,9 @@
 - [ ] Davi: pitch v1 + BMC · Rafael: README (inputs → lógica → outputs) ✅ · Caio: slides
 - [ ] **Noite:** ensaio ponta a ponta dos 4 cenários + gravar vídeo de backup
 
-### Entregue — papel A (Agentes), em 11/11
-Verificação: `pytest -q` em `backend/` (116 testes: agentes, backend e os 4 cenários), sem LLM, RPC nem Etherscan.
+### Entregue — papel A (Agentes), atualizado em 12/11
+Verificação: `pytest -q` em `backend/` (200 testes: agentes, backend, segurança e os 4 cenários), sem LLM, RPC nem Etherscan.
+Os 18 requisitos de integração marcados `dependency_rafael` em `tests/test_security.py` passam e voltaram para a execução padrão.
 
 | Item | Onde | Situação |
 |---|---|---|
@@ -44,14 +45,30 @@ Verificação: `pytest -q` em `backend/` (116 testes: agentes, backend e os 4 ce
 | Defesa contra prompt injection (5 itens do TRD §5) | `agents/prompts.py`, `agents/threat.py`, `demo/wallet_bot.py` | ✅ entregue |
 | RAG: 16 padrões, Chroma + embeddings, queda para tags | `tools/rag.py`, `data/patterns.json` | ✅ entregue — embeddings locais por padrão |
 | Agente Forense (mock) + `POST /forensic` | `agents/forensic.py`, `tools/trace.py` | ✅ entregue — rota simulada, `mocked: true` |
-| Bot-carteira integrado ao backend | `demo/wallet_bot.py` | ✅ entregue |
+| Bot-carteira integrado ao backend com autenticação | `demo/wallet_bot.py` | ✅ entregue |
 | Seção "fluxo do agente" do README | `README.md` | ✅ entregue |
+| Script para conferir o LLM real nos 4 cenários | `scripts/check_llm.py` | ✅ entregue — ainda não executado com rede |
+
+Requisitos de integração (Dávila, `dependency_rafael`) atendidos em 12/11:
+- Função não identificada tem piso de ALERTAR, mesmo com score abaixo de 40.
+- Saída crua do LLM (`llm.chat_json`) sempre passa pelo schema; texto que manda assinar é descartado quando o veredito não é PERMITIR.
+- Idade mínima do contrato vale para todo contrato envolvido, inclusive os conhecidos; contrato com idade não confirmada viola a política.
+- Token sem preço ou sem decimais conhecidos viola o limite em USD (não dá para conferir o valor).
+- Em swap, a allowlist cobre também a carteira que recebe a saída, quando não é o remetente.
+- `allowed_hours` é conferido em UTC.
+- ETH enviado direto a um contrato vira ação `unknown` (nunca PERMITIR).
+- Blocklist cobre o caminho do swap, o token e a origem do `transferFrom`.
+- `increaseAllowance` viola a política de permissões ilimitadas (o valor final não é conhecido).
 
 Pendente no papel A:
-- **LLM real**: nenhuma chamada foi feita a um modelo do OpenRouter (sem chave no ambiente). Falta validar com `OFFLINE=0`: aceitação do `json_schema`, tempo de resposta dentro dos 6 s e qualidade do texto.
+- **LLM real**: nenhuma chamada foi feita a um modelo do OpenRouter (o ambiente de desenvolvimento usado não alcança a rede). Rodar `python -m scripts.check_llm` em `backend/` com o `.env` preenchido: confere aceitação do `json_schema`, tempo dentro dos 6 s e o texto gerado.
 - **Embeddings neurais** (`RAG_EMBEDDINGS=minilm`): caminho implementado, não executado (exige download de ~80 MB).
 - **Simulação real**: os agentes não foram exercitados contra o Anvil; só com fixtures.
-- **Tela Forense** no front: o endpoint existe, a tela não.
+- **Tela Forense** no front: o endpoint e o cliente (`getForensic`) existem, a tela não.
+
+Efeitos a conhecer antes da demo:
+- Com RPC configurado e **sem** `ETHERSCAN_API_KEY`, o contrato é reconhecido mas a idade não; com `min_contract_age_days > 0` isso bloqueia a transação. Preencher a chave ou usar fixtures.
+- Horário permitido é UTC: `[8, 22]` equivale a 5h–19h em Recife.
 
 ## Sex 13/11 — Dia do hackathon
 | Horário | Atividade |

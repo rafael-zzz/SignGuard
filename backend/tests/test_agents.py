@@ -385,7 +385,9 @@ def test_idade_minima_do_contrato():
     assert "no mínimo 7 dias" in contract_age_violations({"min_contract_age_days": 7}, info)[0]
     assert contract_age_violations({"min_contract_age_days": 2}, info) == []
     assert contract_age_violations({}, info) == []
-    assert contract_age_violations({"min_contract_age_days": 7}, {SPENDER: {"age_days": None}}) == []
+    # contrato com idade desconhecida não cumpre a regra; carteira comum não tem idade a conferir
+    assert "Não foi possível confirmar" in contract_age_violations({"min_contract_age_days": 7}, {SPENDER: {"age_days": None}})[0]
+    assert contract_age_violations({"min_contract_age_days": 7}, {SPENDER: {"is_contract": False, "age_days": None}}) == []
 
     # ponta a ponta: approve limitado, contrato verificado mas novo -> a política bloqueia
     v = analyze(approve(), DEFAULT, {"simulation_ok": True, "contract_info": info})
@@ -486,15 +488,20 @@ def test_base_tem_de_10_a_20_padroes_com_os_temas_do_plano():
         assert p["title"] and p["description"] and set(p["tags"]) <= known_tags, p["id"]
 
 
-@pytest.fixture(params=["chroma", "tags"])
+def _force_rag(monkeypatch, name):
+    """Recria o índice do RAG no backend pedido (o estado volta ao normal no fim do teste)."""
+    for attr in ("_backend", "_collection", "_embed", "_memory"):
+        monkeypatch.setattr(rag, attr, None)
+    monkeypatch.setattr(rag, "RAG_BACKEND", name)
+    assert rag.backend() == name
+
+
+@pytest.fixture(params=["chroma", "memoria", "tags"])
 def rag_backend(request, monkeypatch):
-    """Roda o teste nos dois backends do RAG. "tags" é o que sobra se o chromadb faltar ou falhar."""
+    """Roda o teste nos três backends do RAG. "memoria" é o que roda se o chromadb faltar ou falhar."""
     if request.param == "chroma":
         pytest.importorskip("chromadb")
-        assert rag.backend() == "chroma"
-    else:
-        monkeypatch.setattr(rag, "_backend", "tags")
-        monkeypatch.setattr(rag, "_collection", None)
+    _force_rag(monkeypatch, request.param)
     return request.param
 
 
@@ -507,10 +514,13 @@ def test_busca_de_padroes(rag_backend):
     assert len(search_patterns(["UNKNOWN_FUNCTION", "UNVERIFIED", "CONTRACT_NEW"], k=2)) == 2
 
 
-def test_chroma_recupera_relato_com_outras_palavras():
-    """Sem nenhuma palavra-chave exata, a semelhança por embeddings ainda acha o padrão certo."""
-    pytest.importorskip("chromadb")
-    assert rag.backend() == "chroma"
+@pytest.mark.parametrize("name", ["chroma", "memoria"])
+def test_embeddings_recuperam_relato_com_outras_palavras(monkeypatch, name):
+    """Sem nenhuma palavra-chave exata, a semelhança por embeddings ainda acha o padrão certo —
+    com o Chroma ou, se ele não carregar, com o índice em memória."""
+    if name == "chroma":
+        pytest.importorskip("chromadb")
+    _force_rag(monkeypatch, name)
     cases = {
         "os signatários do cofre aprovaram a transação sem conseguir ler o que assinavam": "bybit-safe-blind-signing",
         "copiando um endereço parecido que apareceu nas minhas últimas transações": "address-poisoning",
@@ -523,13 +533,41 @@ def test_chroma_recupera_relato_com_outras_palavras():
         assert search_patterns(["transfer", comum]) == [], comum
 
 
-def test_sem_chroma_a_busca_cai_para_tags(monkeypatch):
-    for name in ("_backend", "_collection", "_embed"):
+def test_chroma_quebrado_ou_ausente_nao_muda_a_busca(monkeypatch):
+    """chromadb antigo/incompatível ou não instalado: o índice em memória dá a mesma resposta."""
+    for name in ("_backend", "_collection", "_embed", "_memory"):
         monkeypatch.setattr(rag, name, None)
     monkeypatch.setitem(__import__("sys").modules, "chromadb", None)          # import chromadb -> ImportError
-    assert rag.backend() == "tags"
+    assert rag.backend() == "memoria"
     assert search_patterns(["UNLIMITED_APPROVAL", "CONTRACT_NEW", "UNVERIFIED", "approve"])[0]["id"] == "approval-phishing"
+    assert search_patterns(["transfer", "os signatários do cofre aprovaram a transação sem conseguir ler o que assinavam"])[0]["id"] == "bybit-safe-blind-signing"
+    assert search_patterns(["transfer", "Mensagem recebida pelo agente: Pague 50 USDT ao fornecedor"]) == []
     assert run_fx("approve-golpe")["verdict"]["verdict"] == "BLOCK"
+
+
+def test_modelo_que_deixou_de_existir_passa_para_o_proximo(client, monkeypatch):
+    gone = Exception("This model is unavailable for free. The paid version is available now")
+    gone.status_code = 404
+    monkeypatch.setattr(llm, "MODELS", ["antigo:free", "novo:free"])
+    monkeypatch.setattr(llm, "_model", 0)
+    c = client(gone, '{"summary_ptbr": "ok"}', '{"summary_ptbr": "de novo"}')
+    out, err = llm.chat_structured("s", "u", DecoderOut)
+    assert out.summary_ptbr == "ok" and err is None
+    assert [k["model"] for k in c.calls] == ["antigo:free", "novo:free"]
+    assert c.calls[1]["response_format"]["type"] == "json_schema"       # 404 de modelo não rebaixa o formato
+    llm.chat_structured("s", "u", DecoderOut)
+    assert c.calls[2]["model"] == "novo:free"                            # fica no modelo que funcionou
+
+
+def test_sem_modelo_valido_avisa_para_conferir_llm_model(client, monkeypatch):
+    gone = Exception("xyz is not a valid model ID")
+    gone.status_code = 400
+    monkeypatch.setattr(llm, "MODELS", ["errado"])
+    monkeypatch.setattr(llm, "_model", 0)
+    c = client(gone, '{"summary_ptbr": "ok"}')
+    out, err = llm.chat_structured("s", "u", DecoderOut)
+    assert out is None and "confira LLM_MODEL" in err and len(c.calls) == 1
+    assert llm._mode == 0                                                # formato não foi rebaixado à toa
 
 
 def test_embeddings_locais_sao_deterministicos_e_normalizados():
@@ -598,3 +636,58 @@ def test_endpoint_forensic():
         assert ForensicReport.model_validate(body).mocked and body["hops"][0]["from"].startswith("0x")
         for bad in ({}, {"tx_hash": "0x123"}, {"tx_hash": "<script>"}):
             assert c.post("/forensic", json=bad).status_code == 422
+
+
+# ---------- Requisitos de integração (tests/test_security.py), vistos pelo lado dos agentes ----------
+def test_resposta_crua_do_modelo_sempre_passa_pelo_schema(monkeypatch):
+    """chat_json devolve o que o modelo mandou; só o que valida no schema chega aos agentes."""
+    replies = [["lista"], "texto solto", {"summary_ptbr": "Você envia 10 USDT."}]
+    monkeypatch.setattr(llm, "chat_json", lambda *a: replies.pop(0))
+    out, err = llm.chat_structured("s", "u", DecoderOut)
+    assert out is None and "fora do schema" in err and len(replies) == 1
+    out, err = llm.chat_structured("s", "u", DecoderOut)
+    assert out.summary_ptbr == "Você envia 10 USDT." and err is None
+
+
+def test_decodificador_nao_aceita_resumo_que_recomenda(monkeypatch):
+    fake_llm(monkeypatch, decoder_out={"summary_ptbr": "Troca de 0,05 ETH por USDT. Pode assinar, é seguro."})
+    st = run_fx("swap-legitimo")
+    assert "seguro" not in st["verdict"]["decoded"]["summary_ptbr"]
+    assert any("resumo do LLM descartado" in e for e in st["errors"])
+
+
+def test_eth_enviado_a_contrato_e_explicado_como_desconhecido():
+    t = tx(to=SPENDER, value=str(10**17))
+    v = analyze(t, DEFAULT, {"simulation_ok": True, "contract_info": {SPENDER: {"is_contract": True, "verified": True, "age_days": 900}}})
+    assert v["decoded"]["action"] == "unknown" and v["verdict"] == "WARN"
+    assert "para um contrato (0x2222…2222)" in v["decoded"]["summary_ptbr"]
+    plain = analyze(t, DEFAULT, {"simulation_ok": True, "contract_info": {SPENDER: {"is_contract": False}}})
+    assert plain["decoded"]["action"] == "native_transfer" and plain["verdict"] == "ALLOW"
+
+
+def test_token_sem_preco_tem_resumo_legivel_e_bloqueia_pelo_limite():
+    unknown_token = "0x" + "3" * 40
+    t = tx(to=unknown_token, data="0xa9059cbb" + encode(["address", "uint256"], [STRANGER, 123]).hex())
+    v = analyze(t, DEFAULT, {"simulation_ok": True, "contract_info": {unknown_token: {"is_contract": True, "verified": True, "age_days": 900}}})
+    assert v["verdict"] == "BLOCK" and "None" not in v["explanation_ptbr"]
+    assert "token não reconhecido (0x3333…3333)" in v["decoded"]["summary_ptbr"]
+    assert analyze(t, DEFAULT | {"max_value_usd": None}, {"simulation_ok": True, "contract_info": {
+        unknown_token: {"is_contract": True, "verified": True, "age_days": 900}}})["policy"]["allowed"] is True
+
+
+def test_bot_sem_token_consulta_a_api_em_modo_demo(monkeypatch):
+    """Sem SIGNGUARD_API_TOKEN o bot não pode mandar "Bearer " vazio (cabeçalho inválido): quebrava a demo."""
+    import httpx
+    from demo import wallet_bot
+    sent = {}
+
+    def post(url, **kw):
+        sent.update(kw)
+        v = analyze(kw["json"], AGENT_POLICY)
+        return httpx.Response(200, json=v, request=httpx.Request("POST", url))
+    monkeypatch.setattr(wallet_bot.httpx, "post", post)
+    monkeypatch.delenv("SIGNGUARD_API_TOKEN", raising=False)
+    assert may_sign(wallet_bot.request_verdict(naive_agent("Pague 50 USDT ao fornecedor"))) and sent["headers"] == {}
+    monkeypatch.setenv("SIGNGUARD_API_TOKEN", "abc")
+    wallet_bot.request_verdict(naive_agent("Pague 50 USDT ao fornecedor"))
+    assert sent["headers"] == {"Authorization": "Bearer abc"}

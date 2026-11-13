@@ -77,4 +77,3 @@ export interface Policy {
   min_contract_age_days: number;
 }
 
-export interface ForensicReport { tx_hash: string; report_md: string }

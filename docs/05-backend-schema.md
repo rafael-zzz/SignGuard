@@ -94,6 +94,7 @@ class SignGuardState(TypedDict):
   "min_contract_age_days": 7
 }
 ```
+`allowed_hours` é conferido em UTC. Um dado que a regra precisa e não está disponível (valor em USD, idade de um contrato) conta como violação.
 
 ## 5. Banco (SQLite)
 ```sql

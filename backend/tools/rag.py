@@ -1,12 +1,13 @@
 """Busca de padrões de golpe (RAG). Dono: Rafael.
 Interface (docs/05-backend-schema.md §6): search_patterns(query) -> docs. A assinatura não muda com o backend.
 
-Dois backends (TRD §2):
+Backends (TRD §2):
 - "chroma": os padrões de data/patterns.json ficam indexados em uma coleção Chroma (em memória) e o
   texto livre da consulta (mensagem do usuário/bot) é comparado por embeddings. A semelhança soma
   pontos à busca por tags, então um relato com outras palavras também recupera o padrão certo.
-- "tags": só tags e palavras-chave, sem dependências. É o que roda se o chromadb não estiver
-  instalado, se RAG_BACKEND=tags ou se o Chroma falhar por qualquer motivo.
+- "memoria": o mesmo cálculo (mesmos embeddings locais, mesma semelhança) sem o Chroma. É o que roda,
+  sozinho, se o chromadb não estiver instalado ou falhar ao carregar — o resultado da busca não muda.
+- "tags": só tags e palavras-chave (RAG_BACKEND=tags).
 
 Embeddings (RAG_EMBEDDINGS):
 - "local" (padrão): vetor calculado aqui, por palavras e trechos de palavras. Não baixa nada, então
@@ -15,6 +16,7 @@ Embeddings (RAG_EMBEDDINGS):
   se não der, cai para "local"."""
 import hashlib
 import json
+import logging
 import math
 import re
 import threading
@@ -34,9 +36,11 @@ EMBED_DIM = 512
 
 _PATTERNS: list[dict] | None = None
 _LOCK = threading.Lock()
+_client = None              # um cliente Chroma por processo (versões 0.x não aceitam recriar)
 _collection = None
 _embed = None
-_backend: str | None = None   # definido na primeira busca: "chroma" ou "tags"
+_memory: dict[str, list[float]] | None = None   # índice sem Chroma: id do padrão -> vetor
+_backend: str | None = None   # definido na primeira busca: "chroma", "memoria" ou "tags"
 
 
 def _load() -> list[dict]:
@@ -94,20 +98,22 @@ def _doc_text(p: dict) -> str:
 
 
 def _init() -> None:
-    """Monta o índice na primeira busca. Qualquer falha -> backend "tags" (a análise não para)."""
-    global _collection, _embed, _backend
+    """Monta o índice na primeira busca. Chroma faltando ou quebrado -> "memoria" (a análise não para)."""
+    global _client, _collection, _embed, _backend, _memory
     with _LOCK:
         if _backend is not None:
             return
         if RAG_BACKEND == "tags":
             _backend = "tags"
             return
+        patterns = _load()
+        texts = [_doc_text(p) for p in patterns]
         try:
+            if RAG_BACKEND == "memoria":
+                raise RuntimeError("RAG_BACKEND=memoria")
             import chromadb
             from chromadb.config import Settings
 
-            patterns = _load()
-            texts = [_doc_text(p) for p in patterns]
             embed, vectors = embed_local, None
             if RAG_EMBEDDINGS == "minilm":
                 try:
@@ -116,37 +122,52 @@ def _init() -> None:
                 except Exception as e:  # noqa: BLE001
                     print(f"[rag] MiniLM indisponível ({type(e).__name__}); usando embeddings locais")
                     embed = embed_local
-            client = chromadb.EphemeralClient(settings=Settings(anonymized_telemetry=False))
-            coll = client.get_or_create_collection("padroes_de_golpe", metadata={"hnsw:space": "cosine"},
+            logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL)   # sem ruído de telemetria
+            if _client is None:
+                _client = chromadb.EphemeralClient(settings=Settings(anonymized_telemetry=False))
+            coll = _client.get_or_create_collection("padroes_de_golpe", metadata={"hnsw:space": "cosine"},
                                                    embedding_function=None)
-            coll.upsert(ids=[p["id"] for p in patterns], embeddings=vectors or embed(texts), documents=texts)
+            vectors = vectors or embed(texts)
+            coll.upsert(ids=[p["id"] for p in patterns], embeddings=vectors, documents=texts)
+            _memory = dict(zip((p["id"] for p in patterns), vectors))   # reserva, se uma consulta falhar
             _collection, _embed, _backend = coll, embed, "chroma"
         except Exception as e:  # noqa: BLE001
-            print(f"[rag] Chroma indisponível ({type(e).__name__}: {e}); usando busca por tags")
-            _backend = "tags"
+            if RAG_BACKEND != "memoria":
+                print(f"[rag] Chroma indisponível ({type(e).__name__}: {str(e).splitlines()[0][:120]}); "
+                      "usando o índice em memória (mesmos embeddings locais)")
+            _memory = dict(zip((p["id"] for p in patterns), embed_local(texts)))
+            _collection, _embed, _backend = None, embed_local, "memoria"
 
 
 def backend() -> str:
-    """"chroma" ou "tags" — qual busca está valendo neste processo."""
+    """"chroma", "memoria" ou "tags" — qual busca está valendo neste processo."""
     _init()
     return _backend
 
 
 def _similarities(text: str) -> dict[str, float]:
-    """id do padrão -> semelhança (0–1) com o texto livre. Vazio no backend "tags" ou se o Chroma falhar."""
+    """id do padrão -> semelhança (0–1) com o texto livre. Vazio no backend "tags"."""
+    global _backend
     _init()
-    if _collection is None or not text.strip():
+    if _backend == "tags" or not text.strip():
         return {}
     try:
-        vector = _embed([text])[0]
-        if not any(vector):
-            return {}
-        with _LOCK:
-            res = _collection.query(query_embeddings=[vector], n_results=len(_load()), include=["distances"])
-        return {i: 1.0 - d for i, d in zip(res["ids"][0], res["distances"][0])}
+        vector = [float(x) for x in _embed([text])[0]]
     except Exception as e:  # noqa: BLE001
-        print(f"[rag] consulta ao Chroma falhou ({type(e).__name__}); usando só tags nesta busca")
+        print(f"[rag] embedding da consulta falhou ({type(e).__name__}); usando só tags nesta busca")
         return {}
+    if not any(vector):
+        return {}
+    if _backend == "chroma":
+        try:
+            with _LOCK:
+                res = _collection.query(query_embeddings=[vector], n_results=len(_load()), include=["distances"])
+            return {i: 1.0 - d for i, d in zip(res["ids"][0], res["distances"][0])}
+        except Exception as e:  # noqa: BLE001 — ex.: chromadb 0.x consultado de outra thread
+            print(f"[rag] consulta ao Chroma falhou ({type(e).__name__}); passando para o índice em memória")
+            _backend = "memoria"
+    # vetores já normalizados: produto escalar = semelhança de cosseno (mesmo resultado do Chroma)
+    return {i: sum(a * b for a, b in zip(vector, doc)) for i, doc in _memory.items()}
 
 
 # ---------- Busca ----------
