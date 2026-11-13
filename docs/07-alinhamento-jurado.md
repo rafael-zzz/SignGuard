@@ -9,7 +9,7 @@
 |---|---|---|---|
 | 1 | "As limitações precisam estar garantidas dentro de um escopo" | O escopo existe, mas está espalhado: `chain_id=1` na API e ações conhecidas no decoder. Não está escrito como garantia. | Escrever o **envelope de garantia** (§3). Tudo fora dele **nunca recebe PERMITIR** (fail-closed). |
 | 2 | "O bloqueio não pode ser probabilístico, independente da jornada de contexto" | Na `main`, `judge.py` deixa o LLM somar até +30 de risco e `_from_score` pode virar **BLOCK**. O BLOCK hoje pode vir do LLM. Na `feat/agents` o score só leva a WARN, mas o LLM ainda tira um PERMITIR. | **BLOQUEAR vem só de regra em código.** O LLM não mexe no veredito. O veredito depende da tx, do estado da chain e da política. O texto da conversa não entra nessa conta. |
-| 3 | "O filtro precisa passar por um filtro probabilístico" / "mitigar entrada probabilística com output probabilístico" | O contexto do bot (prompt injection) é checado só por regex (`INJECTION_HINTS`). | **Jev** classifica o contexto e devolve probabilidade calibrada (§4). Um limiar fixo em código transforma essa probabilidade em sinal. O sinal pode tirar o PERMITIR, mas não pode BLOQUEAR. |
+| 3 | "O filtro precisa passar por um filtro probabilístico?" / "mitigar entrada probabilística com output probabilístico?" | O contexto do bot (prompt injection) é checado só por regex (`INJECTION_HINTS`). | **Jev** classifica o contexto e devolve probabilidade calibrada (§4). Um limiar fixo em código transforma essa probabilidade em sinal. O sinal pode tirar o PERMITIR, mas não pode BLOQUEAR. |
 | 4 | "Como eu confio na solução? Quais as evidências?" | Há 4 fixtures e testes de cenário. Não há número para mostrar. | Conjunto de avaliação, métricas, testes de invariância e determinismo, e o modelo do classificador gravado no atestado (§6). |
 | 5 | "A LLM é necessária em todos os pontos?" | 2 chamadas de LLM generativo em série (decoder e judge). Nenhuma das duas é necessária para decidir. | Tirar o LLM do caminho da decisão (§5). |
 | 6 | "Quanto é a latência?" | Sem medição. Pior caso na `main`: 2 chamadas × (timeout 20 s + 1 retry) ≈ **80 s**. | `timings_ms` por nó na resposta e p50/p95 no eval. Meta: **decisão < 1,5 s** (§7). |
@@ -25,7 +25,7 @@ flowchart LR
   CTX[contexto do bot<br/>texto não confiável] --> JEV[Jev<br/>classificador calibrado]
   DEC --> THR[Ameaças<br/>código + Etherscan]
   DEC --> POL[Política<br/>código]
-  JEV -->|p ≥ limiar → sinal<br/>teto: ALERTAR| GATE
+  JEV -->|p ≥ limiar → sinal<br/>teto: ALERTAR| GATE                                                                                          
   THR --> GATE[Portão de decisão<br/>regras em código]
   POL --> GATE
   GATE --> V[Veredito]

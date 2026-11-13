@@ -47,4 +47,5 @@ Usuário informa hash de um incidente → relatório com rota dos fundos, endere
 ## Estados de erro
 - Simulação falhou → ALERTAR ("não foi possível simular — não assine às cegas").
 - API externa fora → usa cache / marca evidência como indisponível.
-- LLM fora do schema → retry 1x, depois veredito só com regras.
+- LLM fora do schema → retry 1x, depois explicação por template. O veredito não depende do LLM.
+- Jev fora ou lento (> 2 s) → regex como reserva; em transação de agente, ALERTAR.

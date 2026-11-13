@@ -2,7 +2,7 @@
 import clsx from "clsx";
 import { Lock, ShieldCheck, Unlock } from "lucide-react";
 import type { Verdict } from "@/lib/types";
-import { Card, Overline, shortenAddrs, verdictMap } from "./ui";
+import { AnalysisTime, Card, Overline, Reasons, shortenAddrs, verdictMap } from "./ui";
 
 const FOOTER = {
   ALLOW: "O SignGuard liberou: o agente pôde assinar.",
@@ -71,18 +71,12 @@ export default function GuardPanel({ v, loading = false }: { v: Verdict | null; 
       {v.reasons.length > 0 && (
         <>
           <Overline className="mt-4">Motivos</Overline>
-          <ul className="grid gap-1.5 text-body-sm">
-            {v.reasons.map((r, i) => (
-              <li key={`${i}-${r}`} className="flex gap-2">
-                <span className="mt-1.5 size-1 shrink-0 rounded-full bg-text-primary" />
-                <span className="min-w-0 [overflow-wrap:anywhere]">{shortenAddrs(r)}</span>
-              </li>
-            ))}
-          </ul>
+          <Reasons v={v} />
         </>
       )}
 
       <p className="mt-4 text-caption text-text-tertiary">{manipulated ? MANIPULATED : FOOTER[v.verdict]}</p>
+      <AnalysisTime v={v} className="mt-1 block text-caption text-text-tertiary" />
     </Card>
   );
 }

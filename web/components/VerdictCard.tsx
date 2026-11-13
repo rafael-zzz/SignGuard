@@ -6,7 +6,7 @@ import { ArrowUpRight, ClipboardList, ScanSearch, ShieldAlert, type LucideIcon }
 import type { Verdict } from "@/lib/types";
 import AttestButton from "./AttestButton";
 import BalanceChanges from "./BalanceChanges";
-import { Card, DetailRow, Hash, Overline, StatusText, shortenAddrs, verdictMap } from "./ui";
+import { AnalysisTime, Card, DetailRow, Hash, Overline, Reasons, SourceBadges, StatusText, shortenAddrs, verdictMap } from "./ui";
 
 export { short } from "./AddressChip"; // mantém imports antigos funcionando
 
@@ -44,10 +44,13 @@ function Evidence({ text }: { text: string }) {
 
 export default function VerdictCard({ v }: { v: Verdict }) {
   const sim = v.decoded.simulation_ok;
+  const policyWarnings = v.policy.warnings ?? [];
   const nSignals = v.threat.signals.length;
   const threatTone: Tone = nSignals === 0 ? "ok" : v.threat.risk_score >= 40 ? "block" : "warn";
   const decoderTone: Tone = sim === false ? "warn" : "ok";
-  const policyTone: Tone = v.policy.allowed ? "ok" : "block";
+  const policyTone: Tone = !v.policy.allowed ? "block" : policyWarnings.length ? "warn" : "ok";
+  const classifier = v.threat.classifier;
+  const p2 = (n?: number | null) => (n == null ? "—" : n.toFixed(2).replace(".", ","));
   const verdictTone: Tone = v.verdict === "ALLOW" ? "ok" : v.verdict === "WARN" ? "warn" : "block";
   const risk = Math.min(100, Math.max(0, v.risk_score));
   const vm = verdictMap[v.verdict];
@@ -55,7 +58,7 @@ export default function VerdictCard({ v }: { v: Verdict }) {
   const trail: { label: string; detail: string; tone: Tone }[] = [
     { label: "Decodificador", detail: sim === null ? "sem simulação" : sim ? "simulação ok" : "reverteu", tone: decoderTone },
     { label: "Ameaças", detail: nSignals === 0 ? "limpo" : `${nSignals} sinal${nSignals > 1 ? "is" : ""}`, tone: threatTone },
-    { label: "Política", detail: v.policy.allowed ? "dentro das regras" : "violada", tone: policyTone },
+    { label: "Política", detail: !v.policy.allowed ? "violada" : policyWarnings.length ? "não conferida" : "dentro das regras", tone: policyTone },
     { label: "Veredito", detail: vm.label.toLowerCase(), tone: verdictTone },
   ];
 
@@ -70,8 +73,9 @@ export default function VerdictCard({ v }: { v: Verdict }) {
             {vm.label}
           </h2>
           <span className="rounded-full bg-paper-100 px-2.5 py-1 text-micro font-medium text-text-secondary">
-            {v.llm_used ? "análise com IA" : "análise por regras"}
+            decidido por regras em código
           </span>
+          <AnalysisTime v={v} className="rounded-full bg-paper-100 px-2.5 py-1 text-micro font-medium text-text-secondary" />
         </div>
 
         <div className="mt-5">
@@ -95,6 +99,19 @@ export default function VerdictCard({ v }: { v: Verdict }) {
         </div>
 
         <p className="mt-5 max-w-[60ch] text-heading font-medium leading-relaxed">{shortenAddrs(v.explanation_ptbr)}</p>
+        <p className="mt-1 text-caption text-text-tertiary">
+          {v.llm_used ? "Texto escrito por IA depois do veredito; a IA não altera a decisão." : "Texto gerado por template, sem IA."}
+        </p>
+
+        {v.reasons.length > 0 && (
+          <div className="mt-5 max-w-[70ch]">
+            <Overline>Motivos</Overline>
+            <Reasons v={v} />
+            <p className="mt-3 text-caption text-text-tertiary">
+              Só motivo com selo REGRA pode bloquear. O classificador no máximo pede revisão.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Trilha dos agentes — card escuro (substitui o "map card" da referência) */}
@@ -141,22 +158,43 @@ export default function VerdictCard({ v }: { v: Verdict }) {
                   <span className="min-w-0 break-all font-mono text-caption font-semibold">{s.code}</span>
                   <span className="tabular shrink-0 text-caption text-text-tertiary">peso {s.weight}</span>
                 </div>
+                <div className="mb-1"><SourceBadges sources={s.sources} probability={s.probability} /></div>
                 <Evidence text={s.evidence} />
               </div>
             ))}
+            {classifier && (
+              <p className="tabular pt-3 text-caption text-text-tertiary">
+                Classificador {classifier.model}:{" "}
+                {classifier.status === "ok"
+                  ? `injeção ${p2(classifier.injection_p)} (limiar ${p2(classifier.thresholds.injection)}) · intenção ${classifier.intent ?? "—"} ${p2(classifier.intent_confidence)} (limiar ${p2(classifier.thresholds.intent)})`
+                  : classifier.status === "error"
+                    ? "não respondeu — contexto checado só por regex"
+                    : "desligado — contexto checado só por regex"}
+              </p>
+            )}
             {v.threat.patterns.length > 0 && (
               <p className="mt-auto pt-3 text-caption text-text-tertiary">Padrões de golpe: {v.threat.patterns.join(", ")}</p>
             )}
           </AgentCard>
 
-          <AgentCard icon={ClipboardList} title="Política" tone={policyTone} status={v.policy.allowed ? "ok" : "violada"}>
-            {v.policy.allowed ? (
-              <p className="text-text-secondary">Dentro das regras.</p>
-            ) : (
+          <AgentCard
+            icon={ClipboardList}
+            title="Política"
+            tone={policyTone}
+            status={!v.policy.allowed ? "violada" : policyWarnings.length ? "não conferida" : "ok"}
+          >
+            {v.policy.allowed && !policyWarnings.length && <p className="text-text-secondary">Dentro das regras.</p>}
+            {(v.policy.violations.length > 0 || policyWarnings.length > 0) && (
               <ul className="grid gap-2">
                 {v.policy.violations.map((x) => (
                   <li key={x} className="flex gap-2">
                     <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-negative" />
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{shortenAddrs(x)}</span>
+                  </li>
+                ))}
+                {policyWarnings.map((x) => (
+                  <li key={x} className="flex gap-2">
+                    <span className={clsx("mt-1.5 size-1.5 shrink-0 rounded-full", dotCls.warn)} />
                     <span className="min-w-0 [overflow-wrap:anywhere]">{shortenAddrs(x)}</span>
                   </li>
                 ))}
