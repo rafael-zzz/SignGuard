@@ -1,76 +1,122 @@
 "use client";
 // Tela Resultado (04-design-brief). Dono: Caio.
-import { useState } from "react";
-import { attest } from "@/lib/api";
 import type { Verdict } from "@/lib/types";
+import AddressChip from "./AddressChip";
+import AttestButton from "./AttestButton";
+import BalanceChanges from "./BalanceChanges";
+
+export { short } from "./AddressChip"; // mantém imports antigos funcionando
 
 const LABEL = { ALLOW: "🟢 PERMITIR", WARN: "🟡 ALERTAR", BLOCK: "🔴 BLOQUEAR" } as const;
 
-export const short = (a?: string | null) => (a && a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a ?? "—");
+function Status({ kind, children }: { kind: "ok" | "warn" | "block"; children: React.ReactNode }) {
+  return <span className={`status ${kind}`}>{children}</span>;
+}
+
+function Evidence({ text }: { text: string }) {
+  return text.startsWith("http") ? (
+    <a href={text} target="_blank" rel="noopener noreferrer" className="muted">
+      ver evidência ↗
+    </a>
+  ) : (
+    <span className="muted">{text}</span>
+  );
+}
 
 export default function VerdictCard({ v }: { v: Verdict }) {
-  const [att, setAtt] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function onAttest() {
-    setBusy(true);
-    try {
-      const r = await attest(v.analysis_id);
-      setAtt(r.mocked ? "Atestado simulado (configure o contrato no backend)." : r.explorer_url);
-    } catch (e) {
-      setAtt(`Erro: ${(e as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const sim = v.decoded.simulation_ok;
+  const nSignals = v.threat.signals.length;
+  const threatKind = nSignals === 0 ? "ok" : v.threat.risk_score >= 40 ? "block" : "warn";
+  const risk = Math.min(100, Math.max(0, v.risk_score));
 
   return (
-    <div className="grid" style={{ marginTop: 24 }}>
-      <div className="card">
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+    <div className="grid" style={{ marginTop: 28 }}>
+      {/* Veredito */}
+      <div className={`card verdict-hero ${v.verdict}`}>
+        <div className="verdict-top">
           <span className={`badge ${v.verdict}`}>{LABEL[v.verdict]}</span>
-          <span className="muted">Risco {v.risk_score}/100 {v.llm_used ? "· IA" : "· regras"}</span>
+          <span className="pill">{v.llm_used ? "análise com IA" : "análise por regras"}</span>
         </div>
-        <p style={{ fontSize: 18, marginBottom: 0 }}>{v.explanation_ptbr}</p>
-      </div>
-
-      <div className="grid grid-3">
-        <div className="card">
-          <h3>Decodificador</h3>
-          <p>{v.decoded.summary_ptbr}</p>
-          {v.decoded.balance_changes.map((b, i) => (
-            <div key={i} className="mono">{b.delta} {b.symbol}</div>
-          ))}
-          <div className="muted mono" style={{ marginTop: 8 }}>
-            simulação: {v.decoded.simulation_ok === null ? "não executada" : v.decoded.simulation_ok ? "ok" : "reverteu"}
+        <div className="score">
+          <div className="score-label">
+            <span className="muted">Nível de risco</span>
+            <b className="mono">{v.risk_score}/100</b>
+          </div>
+          <div className="meter" role="progressbar" aria-valuenow={v.risk_score} aria-valuemin={0} aria-valuemax={100}>
+            <span style={{ ["--w" as string]: `${risk}%` }} />
           </div>
         </div>
-        <div className="card">
-          <h3>Ameaças</h3>
-          {v.threat.signals.length === 0 && <p className="muted">Nenhum sinal de risco.</p>}
-          <ul className="list">
-            {v.threat.signals.map((s) => (
-              <li key={s.code}><b>{s.code}</b> <span className="muted">— {s.evidence}</span></li>
-            ))}
-          </ul>
-          {v.threat.patterns.length > 0 && <p className="muted">Padrões: {v.threat.patterns.join(", ")}</p>}
+        <p className="explanation">{v.explanation_ptbr}</p>
+      </div>
+
+      {/* Agentes */}
+      <div className="grid grid-3">
+        <div className="card agent">
+          <div className="agent-head">
+            <span className="agent-icon">🔎</span>
+            <h3>Decodificador</h3>
+            <Status kind={sim === false ? "warn" : "ok"}>{sim === false ? "reverteu" : "ok"}</Status>
+          </div>
+          <p>{v.decoded.summary_ptbr}</p>
+          <BalanceChanges changes={v.decoded.balance_changes} />
+          <div className="agent-foot muted mono">
+            simulação: {sim === null ? "não executada" : sim ? "ok" : "reverteu"}
+          </div>
         </div>
-        <div className="card">
-          <h3>Política</h3>
-          {v.policy.allowed ? <p className="muted">Dentro das regras.</p> : (
-            <ul className="list">{v.policy.violations.map((x) => <li key={x}>{x}</li>)}</ul>
+
+        <div className="card agent">
+          <div className="agent-head">
+            <span className="agent-icon">🛡️</span>
+            <h3>Ameaças</h3>
+            <Status kind={threatKind}>
+              {nSignals === 0 ? "limpo" : `${nSignals} sinal${nSignals > 1 ? "is" : ""}`}
+            </Status>
+          </div>
+          {nSignals === 0 && <p className="muted">Nenhum sinal de risco.</p>}
+          {v.threat.signals.map((s) => (
+            <div key={s.code} className="signal">
+              <div className="signal-top">
+                <span className="signal-code">{s.code}</span>
+                <span className="mono muted small">peso {s.weight}</span>
+              </div>
+              <Evidence text={s.evidence} />
+            </div>
+          ))}
+          {v.threat.patterns.length > 0 && (
+            <div className="agent-foot muted small">Padrões de golpe: {v.threat.patterns.join(", ")}</div>
+          )}
+        </div>
+
+        <div className="card agent">
+          <div className="agent-head">
+            <span className="agent-icon">📋</span>
+            <h3>Política</h3>
+            <Status kind={v.policy.allowed ? "ok" : "block"}>{v.policy.allowed ? "ok" : "violada"}</Status>
+          </div>
+          {v.policy.allowed ? (
+            <p className="muted">Dentro das regras.</p>
+          ) : (
+            v.policy.violations.map((x) => (
+              <div key={x} className="signal violation">{x}</div>
+            ))
           )}
         </div>
       </div>
 
+      {/* Atestado */}
       <div className="card">
-        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <button className="btn" onClick={onAttest} disabled={busy}>
-            {busy ? "Registrando…" : "Registrar atestado on-chain"}
-          </button>
-          <span className="mono muted">intent {short(v.intent_hash)}</span>
+        <div className="attest-row">
+          <div>
+            <h3 style={{ marginBottom: 4 }}>Atestado on-chain</h3>
+            <span className="muted small">Registra este veredito de forma pública e auditável.</span>
+          </div>
+          <AttestButton analysisId={v.analysis_id} />
         </div>
-        {att && (att.startsWith("http") ? <p><a href={att} target="_blank">Ver no explorer ↗</a></p> : <p className="muted">{att}</p>)}
+        <hr />
+        <div className="hash-row">
+          <span className="muted small">intent</span>
+          <AddressChip address={v.intent_hash} />
+        </div>
       </div>
     </div>
   );

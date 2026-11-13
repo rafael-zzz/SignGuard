@@ -68,3 +68,13 @@ export interface AttestResponse {
   explorer_url: string | null;
   mocked: boolean;
 }
+
+export interface Policy {
+  max_value_usd: number;
+  allowlist: string[];
+  block_unlimited_approvals: boolean;
+  allowed_hours: [number, number];
+  min_contract_age_days: number;
+}
+
+export interface ForensicReport { tx_hash: string; report_md: string }
