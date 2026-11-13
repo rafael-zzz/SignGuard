@@ -70,8 +70,15 @@ def _extract_json(text: str) -> dict | None:
 def _response_format(schema: type[BaseModel]) -> dict:
     mode = _MODES[_mode]
     if mode == "json_schema":
-        return {"response_format": {"type": "json_schema", "json_schema": {
-            "name": schema.__name__, "strict": True, "schema": response_schema(schema)}}}
+        return {
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": schema.__name__, "strict": True, "schema": response_schema(schema),
+                },
+            },
+            "extra_body": {"provider": {"require_parameters": True}},
+        }
     if mode == "json_object":
         return {"response_format": {"type": "json_object"}}
     return {}

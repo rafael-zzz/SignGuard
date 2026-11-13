@@ -24,7 +24,7 @@ OFFLINE = env("OFFLINE", "0") == "1"
 LLM_API_KEY = env("OPENROUTER_API_KEY")
 LLM_BASE_URL = env("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 # Um modelo ou vários separados por vírgula: se o primeiro deixar de existir (os :free mudam), usa o próximo.
-LLM_MODEL = env("LLM_MODEL", "google/gemma-4-26b-a4b-it:free,openrouter/free")
+LLM_MODEL = env("LLM_MODEL", "google/gemma-4-26b-a4b-it")
 LLM_TIMEOUT = float(env("LLM_TIMEOUT", "6"))        # tempo total de LLM por análise (decoder + judge) — TRD §7
 
 # RAG (padrões de golpe): "chroma" (cai para "tags" se o chromadb faltar ou falhar) ou "tags"

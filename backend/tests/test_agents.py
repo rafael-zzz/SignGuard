@@ -169,7 +169,25 @@ def test_response_format_recusado_desce_de_nivel(client):
     out, _ = llm.chat_structured("s", "u", DecoderOut)
     assert out.summary_ptbr == "ok"
     assert c.calls[0]["response_format"]["type"] == "json_schema"
+    assert c.calls[0]["extra_body"] == {"provider": {"require_parameters": True}}
     assert c.calls[1]["response_format"]["type"] == "json_object"
+    assert "extra_body" not in c.calls[1]
+
+
+def test_json_schema_eh_estrito_e_compatível_com_openrouter_gemma(client):
+    c = client('{"summary_ptbr": "ok"}')
+    out, _ = llm.chat_structured("s", "u", DecoderOut)
+    assert out.summary_ptbr == "ok"
+    request = c.calls[0]
+    envelope = request["response_format"]["json_schema"]
+    assert envelope["strict"] is True
+    assert envelope["schema"] == {
+        "type": "object",
+        "properties": {"summary_ptbr": {"type": "string"}},
+        "required": ["summary_ptbr"],
+        "additionalProperties": False,
+    }
+    assert request["extra_body"] == {"provider": {"require_parameters": True}}
 
 
 def test_erro_de_rede_cai_para_regras_sem_insistir(client):
