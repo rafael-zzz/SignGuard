@@ -24,6 +24,7 @@ flowchart LR
 | Camada | Escolha | Motivo |
 |---|---|---|
 | Orquestração | **LangGraph** (Python) | Grafo explícito, estado tipado, citado no curso |
+| Classificação | **Jev** (TypeSafe AI), modelo fixado `jev-1.14.0` | Probabilidade calibrada para o texto do contexto; saída estruturada; ~0,2–0,5 s |
 | LLM | **OpenRouter** (modelos `:free`), API compatível com OpenAI, pedindo JSON | Custo zero; sem chave → modo regras |
 | API | FastAPI + Pydantic | Rápido, schemas = contrato |
 | Simulação | Anvil (`--fork-url` mainnet) + `debug_traceCall` / balance diff | Gratuito, reproduzível offline |
@@ -50,8 +51,9 @@ Execução: `decoder` → (`threat` ∥ `policy`) → `judge` → `attest` (opci
 - Qualquer violação de política → **BLOQUEAR** (não negociável pelo LLM).
 - Endereço em blocklist → **BLOQUEAR**.
 - Sinais fortes (approve ilimitado + contrato < 7 dias + não verificado) → **BLOQUEAR**.
-- `risk_score` ≥ 40 → **ALERTAR**; senão **PERMITIR**.
-- O LLM redige a explicação e pode **subir** o risco, nunca baixar abaixo do piso calculado em código.
+- `risk_score` ≥ 40 → **ALERTAR**; senão **PERMITIR**. Score nunca leva a BLOQUEAR sozinho.
+- **BLOQUEAR só vem de regra em código.** O Jev (classificador) pode levar no máximo a **ALERTAR**, via limiar fixo: `injection ≥ 0.80`, `intent=divergente ≥ 0.70`.
+- O LLM só redige a explicação e **não altera** veredito nem risco (ver [07](07-alinhamento-jurado.md)).
 
 ## 5. Defesa contra prompt injection
 1. Dados externos (calldata, nomes de token, metadados, mensagens do usuário do bot) entram em bloco delimitado `<untrusted>` e o prompt de sistema diz que é dado.
@@ -73,13 +75,17 @@ event Attested(bytes32 indexed txHash, address indexed target, Verdict v, uint8 
 ## 7. Orçamento de latência
 | Etapa | Alvo |
 |---|---|
-| Simulação + decode | 2 s |
-| Threat (APIs + RAG) | 4 s |
-| LLMs (decoder + judge) | 6 s |
+| Simulação + decode | ≤ 1 s |
+| Threat (APIs + regras) | ≤ 0,5 s |
+| Jev (classificação do contexto) | 0,2–0,5 s (timeout 2 s) |
+| **Veredito total** | **< 1,5 s** |
+| LLM (só explicação, opcional) | timeout 4 s, fora da decisão |
 | Atestado (assíncrono) | não bloqueia resposta |
 
+Medido por nó em `timings_ms` na resposta do `/analyze`.
+
 ## 8. Variáveis de ambiente
-`OPENROUTER_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `OFFLINE`, `MAINNET_RPC_URL`, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY`, `ATTESTER_PRIVATE_KEY` (testnet), `REGISTRY_ADDRESS`
+`TYPESAFE_API_KEY`, `JEV_MODEL`, `JEV_TIMEOUT`, `OPENROUTER_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `OFFLINE`, `MAINNET_RPC_URL`, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY`, `ATTESTER_PRIVATE_KEY` (testnet), `REGISTRY_ADDRESS`
 
 ## 9. Fallbacks para a demo
 - Cache das respostas de Etherscan/simulação dos 4 cenários.
