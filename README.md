@@ -1,4 +1,4 @@
-# 🛡️ SignGuard
+# SignGuard
 
 **Agentes de IA que protegem quem assina transações em blockchain — pessoas ou outros agentes de IA.**
 Hackathon AKCIT Camp Nordeste · 13/11/2026 · CESAR School
@@ -196,5 +196,14 @@ set -a && source <(tr -d '\r' < ../.env) && set +a && forge script script/Deploy
 - `SignGuardRegistry`: [`0x1652D6a7bbE1980df629322B5b2D7c3AA902059B`](https://sepolia.etherscan.io/address/0x1652D6a7bbE1980df629322B5b2D7c3AA902059B#code) (código verificado no Etherscan)
 - Attester: `0x970063227c0eE61592945A5E5226732C43d519B6` (carteira só de testnet)
 
-## Docs
-PRD, TRD, fluxos, design, schema e plano em [`docs/`](docs/).
+## Docs e materiais
+- PRD, TRD, fluxos, design, schema e plano em [`docs/`](docs/).
+- Pasta do projeto no [Google Drive](https://drive.google.com/drive/folders/1QHis-LvIdcmOOb82fQu4oqfvXicpF9fH).
+
+## Time
+| Nome | Função |
+|---|---|
+| Davi Marques | Student Ambassador Bybit, Blockchain dev |
+| Rafael Peixoto | Cybersecurity Researcher (CISSA), Founder at Cypher |
+| Davila Peixoto | HPC Researcher (CESAR), Founder at Cypher |
+| Caio Ferreira | AWS Enthusiast, Computer Science Student |
