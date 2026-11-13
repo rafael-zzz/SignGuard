@@ -47,7 +47,7 @@ def test_demo_other_routes_and_offline_attest(anonymous, monkeypatch):
     policy = db.get_policy("agent-wallet")
     assert anonymous.put("/policies/agent-wallet", json=policy).json() == policy
     assert anonymous.post("/attest", json={"analysis_id": result["analysis_id"]}).json()["mocked"] is True
-    assert anonymous.post("/forensic", json={"tx_hash": "demo"}).status_code == 200
+    assert anonymous.post("/forensic", json={"tx_hash": "0x" + "ab" * 32}).status_code == 200
     assert anonymous.post("/analyze/scenario/missing").status_code == 404
     assert anonymous.get("/analyses/missing").status_code == 404
     assert anonymous.post("/analyze", json={"from": "invalid"}).status_code == 422

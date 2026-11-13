@@ -72,11 +72,13 @@ class ThreatReport(BaseModel):
     signals: list[Signal] = []
     risk_score: int = Field(default=0, ge=0, le=100)
     patterns: list[str] = []         # padrões de golpe recuperados (RAG)
+    evidence: list[str] = []         # o que o agente consultou (TRD §3), inclusive fontes indisponíveis
 
 
 class PolicyResult(BaseModel):
     allowed: bool
     violations: list[str] = []
+    warnings: list[str] = []         # regra que não pôde ser conferida (ex.: token sem preço x limite em USD)
 
 
 class Verdict(BaseModel):
@@ -91,6 +93,30 @@ class Verdict(BaseModel):
     intent_hash: str                 # keccak256(abi.encode(chainId, from, to, value, data))
     report_hash: str                 # keccak256 do JSON canônico do relatório
     llm_used: bool = False
+
+
+class ForensicRequest(BaseModel):
+    tx_hash: str = Field(pattern=r"^0x[0-9a-fA-F]{64}$")
+
+
+class FundHop(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    step: int
+    from_: str = Field(alias="from")
+    from_label: str
+    to: str
+    to_label: str
+    token: str
+    amount: str                      # unidades humanas
+    tx_hash: str
+    minutes_after: int               # minutos depois da transação do incidente
+
+
+class ForensicReport(BaseModel):
+    tx_hash: str
+    mocked: bool                     # True = rota simulada (MVP), não lida da blockchain
+    hops: list[FundHop]
+    report_md: str
 
 
 class AttestRequest(BaseModel):

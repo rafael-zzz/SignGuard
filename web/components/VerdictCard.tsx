@@ -44,6 +44,7 @@ function Evidence({ text }: { text: string }) {
 
 export default function VerdictCard({ v }: { v: Verdict }) {
   const sim = v.decoded.simulation_ok;
+  const policyWarnings = v.policy.warnings ?? [];
   const nSignals = v.threat.signals.length;
   const threatTone: Tone = nSignals === 0 ? "ok" : v.threat.risk_score >= 40 ? "block" : "warn";
   const decoderTone: Tone = sim === false ? "warn" : "ok";
@@ -149,14 +150,24 @@ export default function VerdictCard({ v }: { v: Verdict }) {
             )}
           </AgentCard>
 
-          <AgentCard icon={ClipboardList} title="Política" tone={policyTone} status={v.policy.allowed ? "ok" : "violada"}>
-            {v.policy.allowed ? (
-              <p className="text-text-secondary">Dentro das regras.</p>
-            ) : (
+          <AgentCard
+            icon={ClipboardList}
+            title="Política"
+            tone={policyTone}
+            status={!v.policy.allowed ? "violada" : policyWarnings.length ? "não conferida" : "ok"}
+          >
+            {v.policy.allowed && !policyWarnings.length && <p className="text-text-secondary">Dentro das regras.</p>}
+            {(v.policy.violations.length > 0 || policyWarnings.length > 0) && (
               <ul className="grid gap-2">
                 {v.policy.violations.map((x) => (
                   <li key={x} className="flex gap-2">
                     <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-negative" />
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{shortenAddrs(x)}</span>
+                  </li>
+                ))}
+                {policyWarnings.map((x) => (
+                  <li key={x} className="flex gap-2">
+                    <span className={clsx("mt-1.5 size-1.5 shrink-0 rounded-full", dotCls.warn)} />
                     <span className="min-w-0 [overflow-wrap:anywhere]">{shortenAddrs(x)}</span>
                   </li>
                 ))}

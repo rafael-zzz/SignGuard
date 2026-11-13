@@ -10,12 +10,13 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from agents import llm
+from agents.forensic import investigate
 from agents.graph import analyze
 from . import attest as attest_mod
 from . import db
 from .auth import Owner, require_owner, demo_enabled
 from .config import FIXTURES_DIR, OFFLINE
-from .models import AttestRequest, AttestResponse, TxInput, Verdict, PolicyInput
+from .models import AttestRequest, AttestResponse, ForensicReport, ForensicRequest, TxInput, Verdict, PolicyInput
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -124,15 +125,7 @@ def attest(req: AttestRequest, owner: Owner):
     return AttestResponse(analysis_id=req.analysis_id, onchain_tx=h, explorer_url=url, mocked=mocked)
 
 
-@app.post("/forensic")
-def forensic(body: dict, owner: Owner):
-    """Mock do Agente Forense (fora do MVP)."""
-    tx_hash = body.get("tx_hash", "0x…")
-    return {
-        "tx_hash": tx_hash,
-        "report_md": (
-            f"# Relatório forense (demo)\n\n- Transação analisada: `{tx_hash}`\n"
-            "- Rota dos fundos: carteira da vítima → endereço do golpista → mixer/bridge (rastreamento completo no roadmap)\n"
-            "- Próximos passos: acionar a exchange de destino com este relatório e registrar boletim de ocorrência.\n"
-        ),
-    }
+@app.post("/forensic", response_model=ForensicReport, response_model_by_alias=True)
+def forensic(req: ForensicRequest, owner: Owner):
+    """Agente Forense (mock): rota simulada dos fundos + texto pronto para exchange e boletim de ocorrência."""
+    return investigate(req.tx_hash)

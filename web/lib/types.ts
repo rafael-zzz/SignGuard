@@ -29,8 +29,8 @@ export interface Decoded {
 }
 
 export interface Signal { code: string; weight: number; evidence: string }
-export interface ThreatReport { signals: Signal[]; risk_score: number; patterns: string[] }
-export interface PolicyResult { allowed: boolean; violations: string[] }
+export interface ThreatReport { signals: Signal[]; risk_score: number; patterns: string[]; evidence?: string[] }
+export interface PolicyResult { allowed: boolean; violations: string[]; warnings?: string[] }
 
 export interface Verdict {
   analysis_id: string;
@@ -48,6 +48,20 @@ export interface Verdict {
 
 export interface Scenario { id: string; label: string; expected: VerdictCode; tx: TxInput }
 
+export interface FundHop {
+  step: number;
+  from: string;
+  from_label: string;
+  to: string;
+  to_label: string;
+  token: string;
+  amount: string;
+  tx_hash: string;
+  minutes_after: number;
+}
+
+export interface ForensicReport { tx_hash: string; mocked: boolean; hops: FundHop[]; report_md: string }
+
 export interface AttestResponse {
   analysis_id: string;
   onchain_tx: string | null;
@@ -63,4 +77,3 @@ export interface Policy {
   min_contract_age_days: number;
 }
 
-export interface ForensicReport { tx_hash: string; report_md: string }

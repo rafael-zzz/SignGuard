@@ -15,19 +15,59 @@
 - [x] Caio: telas Analisar + Resultado com JSON mockado (sem esperar a API)
 - [x] Dávila: Anvil fork rodando; `simulate_tx` e `decode_calldata` para ERC-20 `approve/transfer`
 - [x] Dávila: 4 fixtures de demo (03-app-flow)
-- [x] Rafael: grafo LangGraph com nós stub retornando JSON fixo
+- [x] Rafael: grafo LangGraph com nós stub retornando JSON fixo — superado: o grafo já roda com os nós reais; resposta fixa para o time vem de `OFFLINE=1` + fixtures.
 - [x] Davi: `SignGuardRegistry` + teste Foundry + deploy Sepolia ([`0x1652…059B`](https://sepolia.etherscan.io/address/0x1652D6a7bbE1980df629322B5b2D7c3AA902059B#code), atestado testado ponta a ponta)
 - [ ] Davi: preencher casos reais no PRD; rascunho do BMC
 
 ## Qui 12/11 — Integração
-- [ ] Rafael: decoder e judge com LLM real + saída estruturada; regras de piso em código. Versão base na `main`; versão do Rafael (`feat/agents`) aguardando PR.
+- [ ] Rafael: decoder e judge com LLM real + saída estruturada; regras de piso em código — implementado e testado contra servidor local; **falta rodar com a chave do OpenRouter**.
 - [x] Dávila: `contract_info`, `check_blocklist`, endpoints `/analyze` e `/attest`
-- [ ] Rafael: RAG com 10–20 padrões de golpe (approve phishing, drainer, address poisoning, Bybit/Safe). A `main` tem 8; `feat/agents` tem 16, aguardando PR.
+- [x] Rafael: RAG com 10–20 padrões de golpe (approve phishing, drainer, address poisoning, Bybit/Safe) — 16 padrões, busca no Chroma com queda para tags.
 - [x] Caio: telas ligadas à API + tela Agente-carteira (PR #1)
-- [ ] Dávila + Rafael: `wallet_bot.py` + cenário de prompt injection — parte de Dávila implementada e testada; validação conjunta pendente.
-- [ ] Davi: pitch v1 + BMC · Rafael: README (inputs → lógica → outputs) · Caio: slides
+- [x] Dávila + Rafael: `wallet_bot.py` + cenário de prompt injection — integrado e validado ponta a ponta contra a API (pagamento normal permitido, injeção bloqueada).
+- [ ] Davi: pitch v1 + BMC · Rafael: README (inputs → lógica → outputs) ✅ · Caio: slides
 - [ ] **Noite:** ensaio ponta a ponta dos 4 cenários + gravar vídeo de backup
 
+### Entregue — papel A (Agentes), atualizado em 12/11
+Verificação: `pytest -q` em `backend/` (200 testes: agentes, backend, segurança e os 4 cenários), sem LLM, RPC nem Etherscan.
+Os 18 requisitos de integração marcados `dependency_rafael` em `tests/test_security.py` passam e voltaram para a execução padrão.
+
+| Item | Onde | Situação |
+|---|---|---|
+| Grafo `decoder → (threat ∥ policy) → judge` | `agents/graph.py` | ✅ entregue |
+| Decodificador: fatos por código, LLM só reescreve o resumo | `agents/decoder.py` | ✅ entregue |
+| Ameaças: sinais com peso + evidências do que foi consultado | `agents/threat.py` | ✅ entregue |
+| Política determinística (5 regras do schema §4) | `agents/policy.py` | ✅ entregue |
+| Juiz: regras do TRD §4 em código; LLM só sobe o risco | `agents/judge.py` | ✅ entregue |
+| Saída estruturada: schema, 1 nova tentativa, queda para regras | `agents/llm.py`, `agents/prompts.py` | ✅ entregue |
+| Orçamento de 6 s de LLM por análise (TRD §7) | `agents/llm.py` (`LLM_TIMEOUT`) | ✅ entregue |
+| Defesa contra prompt injection (5 itens do TRD §5) | `agents/prompts.py`, `agents/threat.py`, `demo/wallet_bot.py` | ✅ entregue |
+| RAG: 16 padrões, Chroma + embeddings, queda para tags | `tools/rag.py`, `data/patterns.json` | ✅ entregue — embeddings locais por padrão |
+| Agente Forense (mock) + `POST /forensic` | `agents/forensic.py`, `tools/trace.py` | ✅ entregue — rota simulada, `mocked: true` |
+| Bot-carteira integrado ao backend com autenticação | `demo/wallet_bot.py` | ✅ entregue |
+| Seção "fluxo do agente" do README | `README.md` | ✅ entregue |
+| Script para conferir o LLM real nos 4 cenários | `scripts/check_llm.py` | ✅ entregue — ainda não executado com rede |
+
+Requisitos de integração (Dávila, `dependency_rafael`) atendidos em 12/11:
+- Função não identificada tem piso de ALERTAR, mesmo com score abaixo de 40.
+- Saída crua do LLM (`llm.chat_json`) sempre passa pelo schema; texto que manda assinar é descartado quando o veredito não é PERMITIR.
+- Idade mínima do contrato vale para todo contrato envolvido, inclusive os conhecidos; contrato com idade não confirmada viola a política.
+- Token sem preço ou sem decimais conhecidos: o limite em USD não pode ser conferido → ALERTAR via `policy.warnings[]` (alterado em 13/11; antes era violação → BLOQUEAR).
+- Em swap, a allowlist cobre também a carteira que recebe a saída, quando não é o remetente.
+- `allowed_hours` é conferido em UTC.
+- ETH enviado direto a um contrato vira ação `unknown` (nunca PERMITIR).
+- Blocklist cobre o caminho do swap, o token e a origem do `transferFrom`.
+- `increaseAllowance` viola a política de permissões ilimitadas (o valor final não é conhecido).
+
+Pendente no papel A:
+- **LLM real**: nenhuma chamada foi feita a um modelo do OpenRouter (o ambiente de desenvolvimento usado não alcança a rede). Rodar `python -m scripts.check_llm` em `backend/` com o `.env` preenchido: confere aceitação do `json_schema`, tempo dentro dos 6 s e o texto gerado.
+- **Embeddings neurais** (`RAG_EMBEDDINGS=minilm`): caminho implementado, não executado (exige download de ~80 MB).
+- **Simulação real**: os agentes não foram exercitados contra o Anvil; só com fixtures.
+- **Tela Forense** no front: o endpoint e o cliente (`getForensic`) existem, a tela não.
+
+Efeitos a conhecer antes da demo:
+- Com RPC configurado e **sem** `ETHERSCAN_API_KEY`, o contrato é reconhecido mas a idade não; com `min_contract_age_days > 0` isso bloqueia a transação. Preencher a chave ou usar fixtures.
+- Horário permitido é UTC: `[8, 22]` equivale a 5h–19h em Recife.
 
 ## Sex 13/11 — Dia do hackathon (replanejado após o feedback do jurado)
 Detalhes, motivos e código de referência em **[07-alinhamento-jurado.md](07-alinhamento-jurado.md)**.
