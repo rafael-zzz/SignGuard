@@ -59,13 +59,17 @@ def main() -> int:
         print("--record-jev precisa de --live e de TYPESAFE_API_KEY no .env.", file=sys.stderr)
         return 2
     db.init_db()
-    rows = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines()]
+    from eval.dataset import load_dataset
+    from eval.replay import replay_inputs, provenance
+    rows = load_dataset(DATASET)
+    if args.runs < 1:
+        raise ValueError("--runs deve ser positivo")
 
     def run(row: dict, use_recorded: bool = True) -> dict:
-        offline = dict(row["offline"])
+        tx, offline = replay_inputs(row)
         if not use_recorded or args.record_jev:
             offline.pop("jev", None)
-        return analyze(row["tx"], db.DEFAULT_POLICIES[row["tx"]["owner_id"]], offline)
+        return analyze(tx, db.DEFAULT_POLICIES[tx["owner_id"]], offline)
 
     def codes(v: dict) -> set[str]:
         return {s["code"] for s in v["threat"]["signals"]}
@@ -99,7 +103,7 @@ def main() -> int:
         same = [first] if failed_live else [first] + [run(row) for _ in range(max(1, args.runs) - 1)]
         if any(r[k] != same[0][k] for r in same for k in DECISION):
             unstable.append(row["id"])
-        for r in live:
+        for r in (live if args.live else same):
             for node, ms in r["timings_ms"].items():
                 timings.setdefault(node, []).append(ms)
         results.append(first)
@@ -139,7 +143,7 @@ def main() -> int:
     # ---- 3) Injeção: só regex x regex + Jev
     with_ctx = [(row, r) for row, r in zip(rows, results) if row["tx"].get("context")]
     regex = prf([(row["injection"], bool(detect_injection(row["tx"]["context"]))) for row, _ in with_ctx])
-    combined = prf([(row["injection"], "PROMPT_INJECTION" in codes(r)) for row, r in with_ctx]) if jev_seen else None
+    combined = prf([(row["injection"], "PROMPT_INJECTION" in codes(r)) for row, r in with_ctx if (r["threat"]["classifier"] or {}).get("status") == "ok"]) if jev_seen else None
 
     # ---- 4) LLM ligado x desligado. Sem --live o "LLM" é um adversário fixo que pede ALLOW e risco 0.
     if args.live and llm.available():
@@ -226,7 +230,13 @@ def main() -> int:
         label = {"decision": "decisão (até o veredito)"}.get(k, k)
         print(f"  {label:<26} p50 {latency[k]['p50']:>5}   p95 {latency[k]['p95']:>5}")
 
+    coverage = {"total": n, "with_context": len(with_ctx), "classified": len(jev_seen), "unclassified": len(with_ctx) - len(jev_seen)}
+    print(f"Cobertura Jev: {coverage}; regex: todos os contextos; combinado: apenas classificados.")
     summary = {
+        "coverage": coverage,
+        "category_counts": {k: sum(row["expected"] == k for row in rows) for k in LABELS},
+        "case_evidence": [{"id": row["id"], "provenance": provenance(row, r["threat"]["classifier"], args.live), "classifier": r["threat"]["classifier"]} for row, r in zip(rows, results)],
+        "latency_samples": {k: len(v) for k, v in timings.items()},
         "cases": n, "live": args.live, "runs": args.runs, "accuracy": accuracy, "confusion": matrix,
         "wrong": [{"id": c, "expected": e, "got": g} for c, e, g in wrong],
         "false_allow_malicious": false_allow, "malicious_cases": len(malicious), "under_block": under_block,
