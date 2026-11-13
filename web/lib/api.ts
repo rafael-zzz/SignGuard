@@ -7,11 +7,25 @@ const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 const mocks = mock as unknown as { scenarios: Scenario[]; verdicts: Record<string, Verdict> };
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(`${API}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-  });
-  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  let r: Response;
+  try {
+    r = await fetch(`${API}${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    });
+  } catch {
+    throw new Error(`Não consegui falar com o backend. Ele está rodando em ${API}?`);
+  }
+  if (!r.ok) {
+    let detail = "";
+    try {
+      const body = await r.json();
+      detail = typeof body?.detail === "string" ? body.detail : JSON.stringify(body?.detail ?? body);
+    } catch {
+      /* resposta sem JSON: segue só com o status */
+    }
+    throw new Error(detail ? `${r.status}: ${detail}` : `Erro ${r.status}`);
+  }
   return r.json() as Promise<T>;
 }
 
@@ -26,7 +40,13 @@ export async function analyzeScenario(id: string): Promise<Verdict> {
 }
 
 export async function analyzeTx(tx: TxInput): Promise<Verdict> {
-  if (USE_MOCKS) return mocks.verdicts["approve-golpe"];
+  if (USE_MOCKS) {
+    // Sem backend não há análise: devolve um veredito pronto parecido com o pedido (só para desenvolver o front)
+    if (tx.owner_id === "agent-wallet") {
+      return mocks.verdicts[/ignor|todo|tudo|saldo/i.test(tx.context ?? "") ? "agente-manipulado" : "swap-legitimo"];
+    }
+    return mocks.verdicts["approve-golpe"];
+  }
   return req<Verdict>("/analyze", { method: "POST", body: JSON.stringify(tx) });
 }
 
