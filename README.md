@@ -7,6 +7,9 @@ Antes de assinar, um time de agentes analisa a transação, explica em portuguê
 
 > **O probabilístico só filtra, o determinístico decide.** O classificador (Jev) pode tirar o PERMITIR de uma transação. Só uma regra escrita em código pode BLOQUEAR. O LLM generativo só escreve a explicação e não muda o veredito. Detalhes em [`docs/07-alinhamento-jurado.md`](docs/07-alinhamento-jurado.md).
 
+## Link do Drive
+- Pasta do projeto no [Google Drive](https://drive.google.com/drive/folders/1QHis-LvIdcmOOb82fQu4oqfvXicpF9fH).
+
 ## Fluxo do agente
 
 ### Inputs
@@ -198,7 +201,6 @@ set -a && source <(tr -d '\r' < ../.env) && set +a && forge script script/Deploy
 
 ## Docs e materiais
 - PRD, TRD, fluxos, design, schema e plano em [`docs/`](docs/).
-- Pasta do projeto no [Google Drive](https://drive.google.com/drive/folders/1QHis-LvIdcmOOb82fQu4oqfvXicpF9fH).
 
 ## Time
 | Nome | Função |
