@@ -25,6 +25,7 @@ function Evidence({ text }: { text: string }) {
 
 export default function VerdictCard({ v }: { v: Verdict }) {
   const sim = v.decoded.simulation_ok;
+  const policyWarnings = v.policy.warnings ?? [];
   const nSignals = v.threat.signals.length;
   const threatKind = nSignals === 0 ? "ok" : v.threat.risk_score >= 40 ? "block" : "warn";
   const risk = Math.min(100, Math.max(0, v.risk_score));
@@ -91,15 +92,17 @@ export default function VerdictCard({ v }: { v: Verdict }) {
           <div className="agent-head">
             <span className="agent-icon">📋</span>
             <h3>Política</h3>
-            <Status kind={v.policy.allowed ? "ok" : "block"}>{v.policy.allowed ? "ok" : "violada"}</Status>
+            <Status kind={!v.policy.allowed ? "block" : policyWarnings.length ? "warn" : "ok"}>
+              {!v.policy.allowed ? "violada" : policyWarnings.length ? "não conferida" : "ok"}
+            </Status>
           </div>
-          {v.policy.allowed ? (
-            <p className="muted">Dentro das regras.</p>
-          ) : (
-            v.policy.violations.map((x) => (
-              <div key={x} className="signal violation">{x}</div>
-            ))
-          )}
+          {v.policy.allowed && !policyWarnings.length && <p className="muted">Dentro das regras.</p>}
+          {v.policy.violations.map((x) => (
+            <div key={x} className="signal violation">{x}</div>
+          ))}
+          {policyWarnings.map((x) => (
+            <div key={x} className="signal">{x}</div>
+          ))}
         </div>
       </div>
 

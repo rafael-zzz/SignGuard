@@ -53,7 +53,7 @@ Requisitos de integração (Dávila, `dependency_rafael`) atendidos em 12/11:
 - Função não identificada tem piso de ALERTAR, mesmo com score abaixo de 40.
 - Saída crua do LLM (`llm.chat_json`) sempre passa pelo schema; texto que manda assinar é descartado quando o veredito não é PERMITIR.
 - Idade mínima do contrato vale para todo contrato envolvido, inclusive os conhecidos; contrato com idade não confirmada viola a política.
-- Token sem preço ou sem decimais conhecidos viola o limite em USD (não dá para conferir o valor).
+- Token sem preço ou sem decimais conhecidos: o limite em USD não pode ser conferido → ALERTAR via `policy.warnings[]` (alterado em 13/11; antes era violação → BLOQUEAR).
 - Em swap, a allowlist cobre também a carteira que recebe a saída, quando não é o remetente.
 - `allowed_hours` é conferido em UTC.
 - ETH enviado direto a um contrato vira ação `unknown` (nunca PERMITIR).

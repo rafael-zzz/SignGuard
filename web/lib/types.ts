@@ -30,7 +30,7 @@ export interface Decoded {
 
 export interface Signal { code: string; weight: number; evidence: string }
 export interface ThreatReport { signals: Signal[]; risk_score: number; patterns: string[]; evidence?: string[] }
-export interface PolicyResult { allowed: boolean; violations: string[] }
+export interface PolicyResult { allowed: boolean; violations: string[]; warnings?: string[] }
 
 export interface Verdict {
   analysis_id: string;

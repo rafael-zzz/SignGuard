@@ -122,7 +122,7 @@ def test_configured_age_is_enforced(client, age, minimum, expected):
 
 
 @pytest.mark.dependency_rafael
-def test_missing_token_price_and_unknown_decimals_block(client):
+def test_missing_token_price_and_unknown_decimals_warn(client):
     fx = fixture("endereco-suspeito")
     tx = fx["tx"]
     tx["to"] = "0x" + "1" * 40
@@ -131,8 +131,8 @@ def test_missing_token_price_and_unknown_decimals_block(client):
     assert decoded["amount"] is None and decoded["amount_usd"] is None
     fx["offline"]["contract_info"][tx["to"]] = {"is_contract": True, "age_days": 1000}
     result = analyze(tx, db.get_policy("default"), fx["offline"])
-    assert result["verdict"] == "BLOCK"
-    assert any("USD" in reason for reason in result["policy"]["violations"])
+    assert result["verdict"] == "WARN"      # limite não conferido: nunca ALLOW (o agente-carteira só assina com ALLOW)
+    assert any("USD" in reason for reason in result["policy"]["warnings"])
 
 
 @pytest.mark.parametrize("token,raw,expected", [

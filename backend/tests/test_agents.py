@@ -683,14 +683,20 @@ def test_eth_enviado_a_contrato_e_explicado_como_desconhecido():
     assert plain["decoded"]["action"] == "native_transfer" and plain["verdict"] == "ALLOW"
 
 
-def test_token_sem_preco_tem_resumo_legivel_e_bloqueia_pelo_limite():
+def test_token_sem_preco_tem_resumo_legivel_e_alerta_pelo_limite():
     unknown_token = "0x" + "3" * 40
     t = tx(to=unknown_token, data="0xa9059cbb" + encode(["address", "uint256"], [STRANGER, 123]).hex())
     v = analyze(t, DEFAULT, {"simulation_ok": True, "contract_info": {unknown_token: {"is_contract": True, "verified": True, "age_days": 900}}})
-    assert v["verdict"] == "BLOCK" and "None" not in v["explanation_ptbr"]
+    assert v["verdict"] == "WARN" and v["risk_score"] == 40 and "None" not in v["explanation_ptbr"]
+    assert v["policy"]["allowed"] is True and v["policy"]["violations"] == []
+    assert "não pôde ser conferido" in v["policy"]["warnings"][0] and v["policy"]["warnings"][0] in v["reasons"]
+    # o alerta não rebaixa um bloqueio: token sem preço + destino fora da allowlist continua BLOCK
+    blocked = analyze(t, DEFAULT | {"allowlist": [SPENDER]}, {"simulation_ok": True, "contract_info": {
+        unknown_token: {"is_contract": True, "verified": True, "age_days": 900}}})
+    assert blocked["verdict"] == "BLOCK" and blocked["policy"]["warnings"]
     assert "token não reconhecido (0x3333…3333)" in v["decoded"]["summary_ptbr"]
     assert analyze(t, DEFAULT | {"max_value_usd": None}, {"simulation_ok": True, "contract_info": {
-        unknown_token: {"is_contract": True, "verified": True, "age_days": 900}}})["policy"]["allowed"] is True
+        unknown_token: {"is_contract": True, "verified": True, "age_days": 900}}})["policy"]["warnings"] == []
 
 
 def test_bot_sem_token_consulta_a_api_em_modo_demo(monkeypatch):

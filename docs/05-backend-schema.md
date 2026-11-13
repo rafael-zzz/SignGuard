@@ -46,6 +46,7 @@ class ThreatReport(BaseModel):
 
 class PolicyResult(BaseModel):
     allowed: bool; violations: list[str]
+    warnings: list[str] = []   # regra não conferida (token sem preço x limite em USD) -> ALERTAR
 
 class Verdict(BaseModel):
     analysis_id: str

@@ -78,6 +78,7 @@ class ThreatReport(BaseModel):
 class PolicyResult(BaseModel):
     allowed: bool
     violations: list[str] = []
+    warnings: list[str] = []         # regra que não pôde ser conferida (ex.: token sem preço x limite em USD)
 
 
 class Verdict(BaseModel):

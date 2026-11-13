@@ -49,6 +49,7 @@ Execução: `decoder` → (`threat` ∥ `policy`) → `judge` → `attest` (opci
 ## 4. Regras de decisão do Juiz
 - Qualquer violação de política → **BLOQUEAR** (não negociável pelo LLM).
 - Endereço em blocklist → **BLOQUEAR**.
+- Limite em USD não conferido (token sem preço) → **ALERTAR**.
 - Sinais fortes (approve ilimitado + contrato < 7 dias + não verificado) → **BLOQUEAR**.
 - `risk_score` ≥ 40 → **ALERTAR**; senão **PERMITIR**.
 - O LLM redige a explicação e pode **subir** o risco, nunca baixar abaixo do piso calculado em código.

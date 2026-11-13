@@ -36,6 +36,7 @@ Regras do Juiz (todas em código, na ordem de severidade):
 |---|---|
 | Qualquer violação de política (limite, allowlist, horário, approve ilimitado, idade mínima do contrato) | 🔴 BLOQUEAR |
 | Endereço em blocklist | 🔴 BLOQUEAR |
+| Limite em USD não conferido (token sem preço ou sem decimais conhecidos) | 🟡 ALERTAR |
 | Approve ilimitado + contrato com menos de 7 dias + código não verificado | 🔴 BLOQUEAR |
 | Simulação falhou ou não foi possível simular | 🟡 ALERTAR |
 | Função não identificada, ou ETH enviado direto a um contrato | 🟡 ALERTAR |
@@ -47,7 +48,7 @@ Quando algo falha, a análise continua e a decisão fica mais conservadora, nunc
 - LLM lento → decoder e judge dividem um orçamento de 6 s por análise (`LLM_TIMEOUT`); estourou, segue com regras.
 - Etherscan fora ou sem chave → a evidência é marcada como indisponível em `threat.evidence`.
 - Calldata que não dá para decodificar → ação `unknown`, que nunca recebe PERMITIR.
-- Dado que a política precisa e não existe (valor em USD de um token sem preço, idade de um contrato) → conta como violação, não como regra cumprida.
+- Dado que a política precisa e não existe → nunca conta como regra cumprida: idade de contrato não confirmada é violação (BLOQUEAR); valor em USD de um token sem preço vai para `policy.warnings[]` (ALERTAR).
 
 A política é conferida assim: limite em USD por transação; allowlist sobre quem recebe os fundos ou a permissão (em swap, também a carteira que recebe a saída); horário em UTC; idade mínima para todo contrato envolvido; e `approve` ilimitado ou `increaseAllowance` barrados quando `block_unlimited_approvals` está ligado.
 

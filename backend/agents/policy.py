@@ -1,5 +1,6 @@
 """Agente de Política — 100% determinístico (o LLM não decide regra). Dono: Rafael.
-Contrato (TRD §3): entrada `tx`, `decoded`, `policy`; sem ferramentas; saída {violations[], allowed}.
+Contrato (TRD §3): entrada `tx`, `decoded`, `policy`; sem ferramentas; saída {violations[], warnings[], allowed}.
+`violations` = regra descumprida (BLOQUEAR). `warnings` = regra que não pôde ser conferida (ALERTAR).
 Regras (docs/05-backend-schema.md §4): max_value_usd, allowlist, block_unlimited_approvals,
 allowed_hours, min_contract_age_days."""
 from datetime import datetime, timezone
@@ -53,10 +54,6 @@ def evaluate(tx: dict, d: dict, pol: dict, now_hour: int | None = None) -> list[
     limit, usd = _num(pol.get("max_value_usd")), d.get("amount_usd")
     if limit is not None and usd is not None and usd > limit:
         v.append(f"Valor (US$ {fmt_br(usd, 2)}) acima do limite da política (US$ {fmt_br(limit, 2)}).")
-    elif limit is not None and usd is None and d["action"] in MOVES_VALUE and not d["is_unlimited"]:
-        # token sem preço ou sem decimais conhecidos: sem valor em USD o limite não pode ser conferido
-        v.append(f"Não foi possível calcular o valor em USD desta transação; a política limita a "
-                 f"US$ {fmt_br(limit, 2)} por transação.")
 
     allow = [a.lower() for a in pol.get("allowlist") or [] if isinstance(a, str)]
     if allow:
@@ -72,6 +69,16 @@ def evaluate(tx: dict, d: dict, pol: dict, now_hour: int | None = None) -> list[
         if not inside:
             v.append(f"Fora do horário permitido ({start}h–{end}h UTC).")
     return v
+
+
+def unverified_limit(d: dict, pol: dict) -> list[str]:
+    """Token sem preço ou sem decimais conhecidos: sem valor em USD o limite não pode ser conferido.
+    Não é violação (a regra não foi descumprida) nem regra cumprida: vira ALERTAR, nunca PERMITIR."""
+    limit = _num(pol.get("max_value_usd"))
+    if limit is None or d.get("amount_usd") is not None or d["action"] not in MOVES_VALUE or d["is_unlimited"]:
+        return []
+    return [f"Não foi possível calcular o valor em USD desta transação; o limite de "
+            f"US$ {fmt_br(limit, 2)} por transação não pôde ser conferido."]
 
 
 def contract_age_violations(pol: dict, contracts: dict[str, dict]) -> list[str]:
@@ -93,5 +100,6 @@ def contract_age_violations(pol: dict, contracts: dict[str, dict]) -> list[str]:
 
 
 def policy_node(state: dict) -> dict:
-    v = evaluate(state["tx"], state["decoded"], state.get("policy") or {})
-    return {"policy_result": {"allowed": not v, "violations": v}}
+    pol = state.get("policy") or {}
+    v = evaluate(state["tx"], state["decoded"], pol)
+    return {"policy_result": {"allowed": not v, "violations": v, "warnings": unverified_limit(state["decoded"], pol)}}

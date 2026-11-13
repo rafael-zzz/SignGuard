@@ -2,6 +2,7 @@
 Contrato (TRD §3): recebe tudo dos outros agentes; saída {verdict, risk_score, explanation_ptbr, reasons[]}.
 Regras de decisão (TRD §4), todas em código:
   - qualquer violação de política        -> BLOCK
+  - regra de política não conferida (token sem preço x limite em USD) -> WARN
   - endereço em blocklist                -> BLOCK
   - approve ilimitado + contrato < 7 dias + não verificado -> BLOCK
   - risk_score >= 40                     -> WARN; senão ALLOW
@@ -48,6 +49,8 @@ def rule_verdict(threat: dict, pol: dict) -> tuple[str, list[str]]:
 
     for viol in pol["violations"]:
         at_least("BLOCK", viol)
+    for warn in pol.get("warnings") or []:   # regra que não pôde ser conferida: nunca PERMITIR às cegas
+        at_least("WARN", warn)
     if "BLOCKLISTED" in codes:
         at_least("BLOCK", "Endereço está em lista de golpes conhecidos.")
     if STRONG_SIGNALS <= codes:
@@ -99,7 +102,8 @@ def judge_node(state: dict) -> dict:
     # Política completa = regras do nó Política + idade mínima do contrato (dado coletado pelo Ameaças)
     violations = state["policy_result"]["violations"] + contract_age_violations(
         state.get("policy") or {}, state.get("contracts") or {})
-    p = {"allowed": not violations, "violations": violations}
+    p = {"allowed": not violations, "violations": violations,
+         "warnings": state["policy_result"].get("warnings") or []}
 
     verdict, reasons = rule_verdict(t, p)
     risk = max(t["risk_score"], RISK_FLOOR[verdict])
