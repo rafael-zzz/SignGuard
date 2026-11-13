@@ -5,8 +5,9 @@ const LABEL = { ALLOW: "🟢 PERMITIR", WARN: "🟡 ALERTAR", BLOCK: "🔴 BLOQU
 const FOOTER = {
   ALLOW: "O SignGuard liberou: o agente pôde assinar.",
   WARN: "O SignGuard pediu revisão: o agente não assinou.",
-  BLOCK: "O agente foi manipulado, mas não tinha poder de assinar sem o SignGuard.",
+  BLOCK: "O SignGuard bloqueou: o agente não assinou.",
 } as const;
+const MANIPULATED = "O agente foi manipulado, mas não tinha poder de assinar sem o SignGuard.";
 
 export default function GuardPanel({ v, loading = false }: { v: Verdict | null; loading?: boolean }) {
   if (loading) {
@@ -53,7 +54,7 @@ export default function GuardPanel({ v, loading = false }: { v: Verdict | null; 
       )}
 
       <p className="muted small" style={{ marginBottom: 0 }}>
-        {FOOTER[v.verdict]}
+        {!signed && v.threat.signals.some((s) => s.code === "PROMPT_INJECTION") ? MANIPULATED : FOOTER[v.verdict]}
       </p>
     </div>
   );

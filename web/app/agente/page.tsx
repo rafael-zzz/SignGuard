@@ -1,14 +1,17 @@
 "use client";
 // Tela Agente-carteira (04-design-brief, Fluxo 3). Dono: Caio.
 // Chat do bot à esquerda, painel do SignGuard à direita.
-// O backend não tem endpoint do bot: a conversa é simulada aqui e a análise é real (/analyze/scenario).
+// O agente é simulado aqui (lib/agent.ts, igual ao backend/demo/wallet_bot.py): ele obedece a mensagem e
+// monta a transação. A análise é real: POST /analyze com a mensagem em `context`. Quem detecta a manipulação
+// e decide o veredito é o backend, nunca o front.
 import { useState } from "react";
 import BotChat, { type ChatMsg, type Suggestion } from "@/components/BotChat";
 import GuardPanel from "@/components/GuardPanel";
-import { analyzeScenario } from "@/lib/api";
+import { naiveAgent } from "@/lib/agent";
+import { analyzeTx } from "@/lib/api";
 import type { Verdict } from "@/lib/types";
 
-const INJECTION = /ignor|esque[cç]a|instru[cç][õo]es|todo o saldo|esvazi|drene/i;
+const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const INTRO: ChatMsg[] = [
@@ -40,19 +43,17 @@ export default function Page() {
     setBusy(true);
     setVerdict(null);
     push({ role: "user", text });
-    const manipulated = INJECTION.test(text);
+    const { to, amount, tx } = naiveAgent(text);
 
     try {
       await wait(600);
       push({
         role: "bot",
-        text: manipulated
-          ? "Certo! Vou transferir todo o saldo como pedido. Montando a transação…"
-          : "Certo! Montando o pagamento. Antes de assinar, consulto o SignGuard.",
+        text: `Certo! Montando a transferência de ${Number(amount).toLocaleString("pt-BR")} USDT para ${short(to)}. Antes de assinar, consulto o SignGuard.`,
       });
 
       setChecking(true);
-      const v = await analyzeScenario(manipulated ? "agente-manipulado" : "swap-legitimo");
+      const v = await analyzeTx(tx);
       setChecking(false);
       setVerdict(v);
 
@@ -63,7 +64,7 @@ export default function Page() {
           role: "system",
           text: `${ICON[v.verdict]} SignGuard vetou a transação. O agente NÃO assinou.`,
         });
-        push({ role: "bot", text: "Não consegui concluir: o SignGuard bloqueou essa transação." });
+        push({ role: "bot", text: "Não consegui concluir: o SignGuard não liberou essa transação." });
       }
     } catch (e) {
       setChecking(false);

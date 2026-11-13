@@ -40,7 +40,13 @@ export async function analyzeScenario(id: string): Promise<Verdict> {
 }
 
 export async function analyzeTx(tx: TxInput): Promise<Verdict> {
-  if (USE_MOCKS) return mocks.verdicts["approve-golpe"];
+  if (USE_MOCKS) {
+    // Sem backend não há análise: devolve um veredito pronto parecido com o pedido (só para desenvolver o front)
+    if (tx.owner_id === "agent-wallet") {
+      return mocks.verdicts[/ignor|todo|tudo|saldo/i.test(tx.context ?? "") ? "agente-manipulado" : "swap-legitimo"];
+    }
+    return mocks.verdicts["approve-golpe"];
+  }
   return req<Verdict>("/analyze", { method: "POST", body: JSON.stringify(tx) });
 }
 
