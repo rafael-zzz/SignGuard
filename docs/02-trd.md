@@ -24,7 +24,7 @@ flowchart LR
 | Camada | Escolha | Motivo |
 |---|---|---|
 | Orquestração | **LangGraph** (Python) | Grafo explícito, estado tipado, citado no curso |
-| Classificação | **Jev** (TypeSafe AI), modelo fixado `jev-1.14.0` | Probabilidade calibrada para o texto do contexto; saída estruturada; ~0,2–0,5 s. Chamado pela API da TypeSafe ou pelo OpenRouter (`/api/v1/systemone`, `typesafe/jev-1.14`); medido: p50 514 ms |
+| Classificação | **Jev** (TypeSafe AI), modelo fixado `jev-1.14.0` | Probabilidade calibrada para o texto do contexto; saída estruturada; ~0,2–0,5 s |
 | LLM | **OpenRouter** (modelos `:free`), API compatível com OpenAI, pedindo JSON | Custo zero; sem chave → modo regras |
 | API | FastAPI + Pydantic | Rápido, schemas = contrato |
 | Simulação | Anvil (`--fork-url` mainnet) + `debug_traceCall` / balance diff | Gratuito, reproduzível offline |

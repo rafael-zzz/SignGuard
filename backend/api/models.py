@@ -77,9 +77,8 @@ class Signal(BaseModel):
 
 class Classifier(BaseModel):
     """O que a camada probabilística viu. Entra no report_hash: dá para auditar depois (docs/07 §6.4)."""
-    provider: str                    # por onde o Jev foi chamado: "typesafe" (direto) ou "openrouter"
-    model: str                       # versão que respondeu: jev-1.14.0 ou typesafe/jev-1.14-20261014
-    calibrated: bool = True          # probabilidade calibrada do Jev
+    provider: str                    # "jev"
+    model: str                       # versão fixada, ex.: jev-1.14.0
     status: Literal["ok", "off", "error"]   # off = sem chave/OFFLINE (só regex) · error = não respondeu
     thresholds: dict[str, float]     # limiares fixos em código: {"injection": 0.80, "intent": 0.70}
     injection_p: float | None = Field(default=None, ge=0, le=1)

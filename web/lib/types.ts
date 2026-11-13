@@ -38,8 +38,6 @@ export interface Classifier {
   provider: string;
   model: string;
   status: "ok" | "off" | "error";
-  /** Probabilidade calibrada do Jev (sempre true hoje). */
-  calibrated?: boolean;
   thresholds: Record<string, number>;
   injection_p?: number | null;
   intent?: "consistente" | "divergente" | "sem_intencao" | null;

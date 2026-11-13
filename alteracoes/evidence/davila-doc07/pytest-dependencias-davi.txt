@@ -1,0 +1,152 @@
+FFFF.F.FFF                                                               [100%]
+=================================== FAILURES ===================================
+_________________ test_receipt_confirmed_and_retry_idempotent __________________
+
+client = <starlette.testclient.TestClient object at 0x7fcac89c3ce0>
+chain = namespace(result={'analysis_id': 'fbaca8b6-e392-4968-b590-277d9b2cf5c2', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+
+    def test_receipt_confirmed_and_retry_idempotent(client, chain):
+        body = {"analysis_id": chain.result["analysis_id"]}
+        first = client.post("/attest", json=body)
+        assert first.status_code == 200, first.text
+        assert first.json()["mocked"] is False
+        second = client.post("/attest", json=body)
+        assert second.json() == first.json()
+>       assert chain.w3.eth.send_raw_transaction.call_count == 1
+E       AssertionError: assert 2 == 1
+E        +  where 2 = <MagicMock name='mock.eth.send_raw_transaction' id='140508921365328'>.call_count
+E        +    where <MagicMock name='mock.eth.send_raw_transaction' id='140508921365328'> = <MagicMock name='mock.eth' id='140508920926176'>.send_raw_transaction
+E        +      where <MagicMock name='mock.eth' id='140508920926176'> = <MagicMock id='140508920988064'>.eth
+E        +        where <MagicMock id='140508920988064'> = namespace(result={'analysis_id': 'fbaca8b6-e392-4968-b590-277d9b2cf5c2', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D').w3
+
+tests/test_attestation.py:70: AssertionError
+________________ test_receipt_timeout_resumes_without_resending ________________
+
+client = <starlette.testclient.TestClient object at 0x7fcac858ba10>
+chain = namespace(result={'analysis_id': 'ad2b74ae-098d-423b-933d-130405d4cdba', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+
+    def test_receipt_timeout_resumes_without_resending(client, chain):
+        body = {"analysis_id": chain.result["analysis_id"]}
+        chain.w3.eth.wait_for_transaction_receipt.side_effect = [TimeExhausted(), chain.receipt]
+        first = client.post("/attest", json=body)
+>       assert first.status_code == 504
+E       assert 200 == 504
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_attestation.py:79: AssertionError
+____________________ test_send_timeout_does_not_send_again _____________________
+
+client = <starlette.testclient.TestClient object at 0x7fcac858cce0>
+chain = namespace(result={'analysis_id': '76b105f7-80cc-4e63-ae3c-681093d2174c', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+
+    def test_send_timeout_does_not_send_again(client, chain):
+        body = {"analysis_id": chain.result["analysis_id"]}
+        chain.w3.eth.send_raw_transaction.side_effect = TimeoutError("provider uncertain")
+>       assert client.post("/attest", json=body).status_code == 504
+E       AssertionError: assert 502 == 504
+E        +  where 502 = <Response [502 Bad Gateway]>.status_code
+E        +    where <Response [502 Bad Gateway]> = post('/attest', json={'analysis_id': '76b105f7-80cc-4e63-ae3c-681093d2174c'})
+E        +      where post = <starlette.testclient.TestClient object at 0x7fcac858cce0>.post
+
+tests/test_attestation.py:89: AssertionError
+________________ test_receipt_reverted_is_not_saved_as_success _________________
+
+client = <starlette.testclient.TestClient object at 0x7fcac85a39e0>
+chain = namespace(result={'analysis_id': '77c9f404-063c-44b8-9a89-17df447ed82f', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+
+    def test_receipt_reverted_is_not_saved_as_success(client, chain):
+        chain.receipt["status"] = 0
+        body = {"analysis_id": chain.result["analysis_id"]}
+>       assert client.post("/attest", json=body).status_code == 502
+E       AssertionError: assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = post('/attest', json={'analysis_id': '77c9f404-063c-44b8-9a89-17df447ed82f'})
+E        +      where post = <starlette.testclient.TestClient object at 0x7fcac85a39e0>.post
+
+tests/test_attestation.py:98: AssertionError
+________________ test_wrong_chain_or_empty_registry_never_signs ________________
+
+client = <starlette.testclient.TestClient object at 0x7fcac1fa4b00>
+chain = namespace(result={'analysis_id': '186516f0-827f-488c-9579-52e2573e2b5f', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+
+    def test_wrong_chain_or_empty_registry_never_signs(client, chain):
+        body = {"analysis_id": chain.result["analysis_id"]}
+        chain.w3.eth.chain_id = 1
+        assert client.post("/attest", json=body).status_code == 502
+        chain.w3.eth.chain_id = 11155111
+        chain.w3.eth.get_code.return_value = b""
+>       assert client.post("/attest", json=body).status_code == 502
+E       AssertionError: assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = post('/attest', json={'analysis_id': '186516f0-827f-488c-9579-52e2573e2b5f'})
+E        +      where post = <starlette.testclient.TestClient object at 0x7fcac1fa4b00>.post
+
+tests/test_attestation.py:119: AssertionError
+___________________ test_wrong_receipt_hash_is_not_confirmed ___________________
+
+client = <starlette.testclient.TestClient object at 0x7fcac1fd4380>
+chain = namespace(result={'analysis_id': '67ed0d33-dd73-4fd2-b913-67b41094cc3a', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+
+    def test_wrong_receipt_hash_is_not_confirmed(client, chain):
+        chain.receipt["transactionHash"] = bytes(32)
+>       assert client.post("/attest", json={"analysis_id": chain.result["analysis_id"]}).status_code == 502
+E       AssertionError: assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = post('/attest', json={'analysis_id': '67ed0d33-dd73-4fd2-b913-67b41094cc3a'})
+E        +      where post = <starlette.testclient.TestClient object at 0x7fcac1fd4380>.post
+
+tests/test_attestation.py:141: AssertionError
+___________ test_confirmed_tx_with_wrong_registry_state_is_conflict ____________
+
+client = <starlette.testclient.TestClient object at 0x7fcac1fd5370>
+chain = namespace(result={'analysis_id': '3435d61d-e13d-4ee4-bead-4f86dece4069', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+
+    def test_confirmed_tx_with_wrong_registry_state_is_conflict(client, chain):
+        def send(raw):
+            chain.state["record"] = (*chain.recorded[:2], 2, *chain.recorded[3:])
+            return chain.receipt["transactionHash"]
+        chain.w3.eth.send_raw_transaction.side_effect = send
+>       assert client.post("/attest", json={"analysis_id": chain.result["analysis_id"]}).status_code == 409
+E       AssertionError: assert 200 == 409
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = post('/attest', json={'analysis_id': '3435d61d-e13d-4ee4-bead-4f86dece4069'})
+E        +      where post = <starlette.testclient.TestClient object at 0x7fcac1fd5370>.post
+
+tests/test_attestation.py:150: AssertionError
+____________________ test_pending_hash_is_saved_before_send ____________________
+
+client = <starlette.testclient.TestClient object at 0x7fcac1e370b0>
+chain = namespace(result={'analysis_id': '3f835e4f-d289-430e-9338-c01730206205', 'verdict': 'ALLOW', 'risk_score': 0, 'explana...mber': 123, 'from': '0x2222222222222222222222222222222222222222'}, target='0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+
+    def test_pending_hash_is_saved_before_send(client, chain):
+        observed = []
+        previous_send = chain.w3.eth.send_raw_transaction.side_effect
+        def inspect_before_send(raw):
+            with db.conn() as c:
+                row = c.execute("SELECT status,tx_hash FROM attestation_jobs").fetchone()
+                observed.append(dict(row) if row else None)
+            return previous_send(raw)
+        chain.w3.eth.send_raw_transaction.side_effect = inspect_before_send
+        response = client.post("/attest", json={"analysis_id": chain.result["analysis_id"]})
+        assert response.status_code == 200
+>       assert observed and observed[0] is not None, "hash ainda não estava durável no momento do envio"
+E       AssertionError: hash ainda não estava durável no momento do envio
+E       assert ([None] and None is not None)
+
+tests/test_attestation.py:165: AssertionError
+=============================== warnings summary ===============================
+tests/test_attestation.py: 38 warnings
+  /tmp/signguard-venv/lib/python3.12/site-packages/chromadb/types.py:144: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    return self.model_fields  # pydantic 2.x
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_attestation.py::test_receipt_confirmed_and_retry_idempotent
+FAILED tests/test_attestation.py::test_receipt_timeout_resumes_without_resending
+FAILED tests/test_attestation.py::test_send_timeout_does_not_send_again - Ass...
+FAILED tests/test_attestation.py::test_receipt_reverted_is_not_saved_as_success
+FAILED tests/test_attestation.py::test_wrong_chain_or_empty_registry_never_signs
+FAILED tests/test_attestation.py::test_wrong_receipt_hash_is_not_confirmed - ...
+FAILED tests/test_attestation.py::test_confirmed_tx_with_wrong_registry_state_is_conflict
+FAILED tests/test_attestation.py::test_pending_hash_is_saved_before_send - As...
+8 failed, 2 passed, 386 deselected, 38 warnings in 2.33s

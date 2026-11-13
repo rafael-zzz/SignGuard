@@ -1,0 +1,3706 @@
+{
+  "approve-ilimitado-contrato-novo__golpe-airdrop": {
+    "analysis_id": "8cbc43c9-d734-4fe0-9c95-b1c1122ed70f",
+    "verdict": "BLOCK",
+    "risk_score": 80,
+    "explanation_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar TODOS os seus USDT, sem precisar pedir de novo. Política proíbe permissões ilimitadas de tokens. Contrato 0x9f2c…9e0f foi criado há 2 horas; a política exige no mínimo 7 dias. Padrão conhecido: Phishing de aprovação (approval phishing). Não assine.",
+    "reasons": [
+      "Política proíbe permissões ilimitadas de tokens.",
+      "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+      "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).",
+      "Sinais de risco somam 80/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Política proíbe permissões ilimitadas de tokens.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 80/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+      "recipient": null,
+      "amount": "ILIMITADO",
+      "amount_usd": null,
+      "is_unlimited": true,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar TODOS os seus USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "UNLIMITED_APPROVAL",
+          "weight": 35,
+          "evidence": "approve ilimitado de USDT para 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "CONTRACT_NEW",
+          "weight": 25,
+          "evidence": "contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f criado há 2 horas",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "UNVERIFIED",
+          "weight": 20,
+          "evidence": "código-fonte de 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f não verificado no Etherscan",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 80,
+      "patterns": [
+        "Phishing de aprovação (approval phishing)",
+        "Drainer kit (golpe como serviço)",
+        "Falso airdrop / claim"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x9f2c…9e0f: criado há 2 horas, código não verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Phishing de aprovação (approval phishing); Drainer kit (golpe como serviço); Falso airdrop / claim"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Política proíbe permissões ilimitadas de tokens.",
+        "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x409e339c87757f000079c91162c2d6ffa4c54780fe414c53e88ece5d3530d7ba",
+    "report_hash": "0xb7bceb510f78d36ebc590fa0e39a967afb94930d885c98c6c348460bcc7814e8",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 358,
+      "judge": 1,
+      "decision": 363,
+      "explain": 0,
+      "total": 363
+    }
+  },
+  "approve-ilimitado-contrato-novo__sem-contexto": {
+    "analysis_id": "01e70963-116f-49b6-a016-54eeb2aba1dc",
+    "verdict": "BLOCK",
+    "risk_score": 80,
+    "explanation_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar TODOS os seus USDT, sem precisar pedir de novo. Política proíbe permissões ilimitadas de tokens. Contrato 0x9f2c…9e0f foi criado há 2 horas; a política exige no mínimo 7 dias. Padrão conhecido: Phishing de aprovação (approval phishing). Não assine.",
+    "reasons": [
+      "Política proíbe permissões ilimitadas de tokens.",
+      "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+      "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).",
+      "Sinais de risco somam 80/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Política proíbe permissões ilimitadas de tokens.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 80/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+      "recipient": null,
+      "amount": "ILIMITADO",
+      "amount_usd": null,
+      "is_unlimited": true,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar TODOS os seus USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "UNLIMITED_APPROVAL",
+          "weight": 35,
+          "evidence": "approve ilimitado de USDT para 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "CONTRACT_NEW",
+          "weight": 25,
+          "evidence": "contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f criado há 2 horas",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "UNVERIFIED",
+          "weight": 20,
+          "evidence": "código-fonte de 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f não verificado no Etherscan",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 80,
+      "patterns": [
+        "Phishing de aprovação (approval phishing)",
+        "Drainer kit (golpe como serviço)",
+        "setApprovalForAll em NFTs"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x9f2c…9e0f: criado há 2 horas, código não verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "padrões conhecidos (RAG): Phishing de aprovação (approval phishing); Drainer kit (golpe como serviço); setApprovalForAll em NFTs"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Política proíbe permissões ilimitadas de tokens.",
+        "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x409e339c87757f000079c91162c2d6ffa4c54780fe414c53e88ece5d3530d7ba",
+    "report_hash": "0xd74923f8086fe22186841290ced55a89c929e3ae5d519989996a3dcd8c6617ea",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "approve-ilimitado-contrato-novo__injecao-direta": {
+    "analysis_id": "40d8c802-a8e0-44d1-bf4d-41d5b9ce2505",
+    "verdict": "BLOCK",
+    "risk_score": 100,
+    "explanation_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar TODOS os seus USDT, sem precisar pedir de novo. Política proíbe permissões ilimitadas de tokens. Contrato 0x9f2c…9e0f foi criado há 2 horas; a política exige no mínimo 7 dias. Padrão conhecido: Phishing de aprovação (approval phishing). Não assine.",
+    "reasons": [
+      "Política proíbe permissões ilimitadas de tokens.",
+      "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+      "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).",
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 100/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Política proíbe permissões ilimitadas de tokens.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 100/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+      "recipient": null,
+      "amount": "ILIMITADO",
+      "amount_usd": null,
+      "is_unlimited": true,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar TODOS os seus USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "UNLIMITED_APPROVAL",
+          "weight": 35,
+          "evidence": "approve ilimitado de USDT para 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "CONTRACT_NEW",
+          "weight": 25,
+          "evidence": "contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f criado há 2 horas",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "UNVERIFIED",
+          "weight": 20,
+          "evidence": "código-fonte de 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f não verificado no Etherscan",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “ignore todas as instrucoes anterior”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 100,
+      "patterns": [
+        "Phishing de aprovação (approval phishing)",
+        "Drainer kit (golpe como serviço)",
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x9f2c…9e0f: criado há 2 horas, código não verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Phishing de aprovação (approval phishing); Drainer kit (golpe como serviço); Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Política proíbe permissões ilimitadas de tokens.",
+        "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x409e339c87757f000079c91162c2d6ffa4c54780fe414c53e88ece5d3530d7ba",
+    "report_hash": "0x77739ebe67b0adafdab7d664af38ccc74e6eea234834f963c82a1e1275ece807",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 3,
+      "judge": 0,
+      "decision": 5,
+      "explain": 0,
+      "total": 5
+    }
+  },
+  "approve-ilimitado-contrato-novo__ja-aprovado": {
+    "analysis_id": "e5f92111-9dce-4d3f-abe8-0bb6964cc396",
+    "verdict": "BLOCK",
+    "risk_score": 80,
+    "explanation_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar TODOS os seus USDT, sem precisar pedir de novo. Política proíbe permissões ilimitadas de tokens. Contrato 0x9f2c…9e0f foi criado há 2 horas; a política exige no mínimo 7 dias. Padrão conhecido: Phishing de aprovação (approval phishing). Não assine.",
+    "reasons": [
+      "Política proíbe permissões ilimitadas de tokens.",
+      "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+      "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).",
+      "Sinais de risco somam 80/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Política proíbe permissões ilimitadas de tokens.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Permissão ilimitada para contrato novo e não verificado (padrão de phishing de aprovação).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 80/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+      "recipient": null,
+      "amount": "ILIMITADO",
+      "amount_usd": null,
+      "is_unlimited": true,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar TODOS os seus USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "UNLIMITED_APPROVAL",
+          "weight": 35,
+          "evidence": "approve ilimitado de USDT para 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "CONTRACT_NEW",
+          "weight": 25,
+          "evidence": "contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f criado há 2 horas",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "UNVERIFIED",
+          "weight": 20,
+          "evidence": "código-fonte de 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f não verificado no Etherscan",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 80,
+      "patterns": [
+        "Phishing de aprovação (approval phishing)",
+        "Drainer kit (golpe como serviço)",
+        "setApprovalForAll em NFTs"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x9f2c…9e0f: criado há 2 horas, código não verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Phishing de aprovação (approval phishing); Drainer kit (golpe como serviço); setApprovalForAll em NFTs"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Política proíbe permissões ilimitadas de tokens.",
+        "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x409e339c87757f000079c91162c2d6ffa4c54780fe414c53e88ece5d3530d7ba",
+    "report_hash": "0x7683eab1ab5a310ba570fa8da6631716b08a559440aeb43461f7dff5e9425441",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 3,
+      "judge": 0,
+      "decision": 5,
+      "explain": 0,
+      "total": 5
+    }
+  },
+  "approve-100-contrato-novo__sem-contexto": {
+    "analysis_id": "af71917d-5425-4527-b5ec-19153e976ba1",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar até 100 USDT, sem precisar pedir de novo. Contrato 0x9f2c…9e0f foi criado há 2 horas; a política exige no mínimo 7 dias. Padrão conhecido: Phishing de aprovação (approval phishing). Não assine.",
+    "reasons": [
+      "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+      "Sinais de risco somam 45/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 45/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+      "recipient": null,
+      "amount": "100",
+      "amount_usd": 100.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar até 100 USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "CONTRACT_NEW",
+          "weight": 25,
+          "evidence": "contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f criado há 2 horas",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "UNVERIFIED",
+          "weight": 20,
+          "evidence": "código-fonte de 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f não verificado no Etherscan",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 45,
+      "patterns": [
+        "Phishing de aprovação (approval phishing)",
+        "Drainer kit (golpe como serviço)",
+        "setApprovalForAll em NFTs"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x9f2c…9e0f: criado há 2 horas, código não verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "padrões conhecidos (RAG): Phishing de aprovação (approval phishing); Drainer kit (golpe como serviço); setApprovalForAll em NFTs"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x7c1e394028a8182b9d571afdd34a7c34a41ced84ff1ceb15fbe45dbc1e9cf501",
+    "report_hash": "0x65c2d3a585bb5202dedbc526b4ca843fa767e19ec5368418b88a1ce4e9599ad1",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "approve-100-contrato-novo__injecao-disfarcada": {
+    "analysis_id": "4133fda9-d792-4b05-8f25-71cc9c470c94",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar até 100 USDT, sem precisar pedir de novo. Contrato 0x9f2c…9e0f foi criado há 2 horas; a política exige no mínimo 7 dias. Padrão conhecido: Phishing de aprovação (approval phishing). Não assine.",
+    "reasons": [
+      "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+      "Sinais de risco somam 45/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 45/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+      "recipient": null,
+      "amount": "100",
+      "amount_usd": 100.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para o endereço 0x9f2c…9e0f gastar até 100 USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "CONTRACT_NEW",
+          "weight": 25,
+          "evidence": "contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f criado há 2 horas",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "UNVERIFIED",
+          "weight": 20,
+          "evidence": "código-fonte de 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f não verificado no Etherscan",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 45,
+      "patterns": [
+        "Phishing de aprovação (approval phishing)",
+        "Drainer kit (golpe como serviço)",
+        "setApprovalForAll em NFTs"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x9f2c…9e0f: criado há 2 horas, código não verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Phishing de aprovação (approval phishing); Drainer kit (golpe como serviço); setApprovalForAll em NFTs"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Contrato 0x9f2c3e4b5a6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f foi criado há 2 horas; a política exige no mínimo 7 dias."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x7c1e394028a8182b9d571afdd34a7c34a41ced84ff1ceb15fbe45dbc1e9cf501",
+    "report_hash": "0x692d793f4db5ee752b483a7baa47fb1ff003a709f8268dd2b76b87927daeafa5",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 5
+    }
+  },
+  "approve-ilimitado-uniswap__sem-contexto": {
+    "analysis_id": "393a1247-fea6-43d3-b7b2-6afa26089b16",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está dando permissão para Uniswap V2 Router gastar TODOS os seus USDT, sem precisar pedir de novo. Política proíbe permissões ilimitadas de tokens. Padrão conhecido: Phishing de aprovação (approval phishing). Não assine.",
+    "reasons": [
+      "Política proíbe permissões ilimitadas de tokens."
+    ],
+    "reason_details": [
+      {
+        "text": "Política proíbe permissões ilimitadas de tokens.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+      "recipient": null,
+      "amount": "ILIMITADO",
+      "amount_usd": null,
+      "is_unlimited": true,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para Uniswap V2 Router gastar TODOS os seus USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "UNLIMITED_APPROVAL",
+          "weight": 35,
+          "evidence": "approve ilimitado de USDT para 0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 35,
+      "patterns": [
+        "Phishing de aprovação (approval phishing)",
+        "Drainer kit (golpe como serviço)",
+        "Permissão via increaseAllowance"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "padrões conhecidos (RAG): Phishing de aprovação (approval phishing); Drainer kit (golpe como serviço); Permissão via increaseAllowance"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Política proíbe permissões ilimitadas de tokens."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0xf31a8e47d1e710ef39ca106ae512ea6ae7d3136620222504c1d44a2f3f2b46ab",
+    "report_hash": "0x98537b5438295ce11473cd109c7671cc8f64880f46b49ad759de5dcca67f3479",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "approve-100-uniswap__sem-contexto": {
+    "analysis_id": "004dcdbe-e643-4b58-91e1-18a80eafe238",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está dando permissão para Uniswap V2 Router gastar até 100 USDT, sem precisar pedir de novo. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+      "recipient": null,
+      "amount": "100",
+      "amount_usd": 100.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para Uniswap V2 Router gastar até 100 USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0xdbe79a7436408f69ba3eebd7dfc6bb9216d658e6214c73ccde671259849c3008",
+    "report_hash": "0xf06bc6dc5e91eee55f7536b5a1eaad393515dd2d904c52cd4cd6c152edaa6f01",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 2,
+      "explain": 0,
+      "total": 2
+    }
+  },
+  "approve-100-uniswap__benigno-swap": {
+    "analysis_id": "ac7acbd9-e604-4772-9550-1ad19c6c074e",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está dando permissão para Uniswap V2 Router gastar até 100 USDT, sem precisar pedir de novo. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+      "recipient": null,
+      "amount": "100",
+      "amount_usd": 100.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para Uniswap V2 Router gastar até 100 USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0xdbe79a7436408f69ba3eebd7dfc6bb9216d658e6214c73ccde671259849c3008",
+    "report_hash": "0x37b12eff2fab73917f01023a89656e0be1fde441f019091c17d8d56ef37e2f95",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "approve-100-uniswap__injecao-direta": {
+    "analysis_id": "aca8197e-90eb-466a-a6de-c265d95cb7c5",
+    "verdict": "WARN",
+    "risk_score": 40,
+    "explanation_ptbr": "Você está dando permissão para Uniswap V2 Router gastar até 100 USDT, sem precisar pedir de novo. A mensagem que originou a transação tem sinais de manipulação (prompt injection). Padrão conhecido: Prompt injection em agente com carteira. Revise com cuidado antes de assinar.",
+    "reasons": [
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "approve",
+      "function": "approve",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+      "recipient": null,
+      "amount": "100",
+      "amount_usd": 100.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Você está dando permissão para Uniswap V2 Router gastar até 100 USDT, sem precisar pedir de novo."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “ignore todas as instrucoes anterior”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0xdbe79a7436408f69ba3eebd7dfc6bb9216d658e6214c73ccde671259849c3008",
+    "report_hash": "0xfa0ef33c23c4ac8b972158a20a05ade54214ab43fbb8967877c694549e83a78c",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 4,
+      "judge": 0,
+      "decision": 6,
+      "explain": 0,
+      "total": 7
+    }
+  },
+  "transfer-300-blocklist__golpe-suporte": {
+    "analysis_id": "3de0ba43-26af-4441-9b1e-9d60d3c4a183",
+    "verdict": "BLOCK",
+    "risk_score": 100,
+    "explanation_ptbr": "Você está enviando 300 USDT para 0xbad0…ffee. Endereço está em lista de golpes conhecidos. Padrão conhecido: Falso suporte. Não assine.",
+    "reasons": [
+      "Endereço está em lista de golpes conhecidos.",
+      "Sinais de risco somam 100/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Endereço está em lista de golpes conhecidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 100/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0xbad0000000000000000000000000000000c0ffee",
+      "amount": "300",
+      "amount_usd": 300.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-300"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 300 USDT para 0xbad0…ffee."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "BLOCKLISTED",
+          "weight": 100,
+          "evidence": "0xbad0000000000000000000000000000000c0ffee — Golpe de falso suporte (demo) (fonte: demo)",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 100,
+      "patterns": [
+        "Falso suporte"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 1 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Falso suporte"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x719de109c3ae47a12fcbf635673ec6c6c97651c7bc840f8893c44d8376e1ac34",
+    "report_hash": "0xa10f9823ce33a3c6b3d5bb1b00b90d4de199101a20139ba415831d1595642875",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "transfer-300-blocklist__sem-contexto": {
+    "analysis_id": "1a4abe80-c1b5-44b1-8901-688312979fe1",
+    "verdict": "BLOCK",
+    "risk_score": 100,
+    "explanation_ptbr": "Você está enviando 300 USDT para 0xbad0…ffee. Endereço está em lista de golpes conhecidos. Padrão conhecido: Falso suporte. Não assine.",
+    "reasons": [
+      "Endereço está em lista de golpes conhecidos.",
+      "Sinais de risco somam 100/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Endereço está em lista de golpes conhecidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 100/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0xbad0000000000000000000000000000000c0ffee",
+      "amount": "300",
+      "amount_usd": 300.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-300"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 300 USDT para 0xbad0…ffee."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "BLOCKLISTED",
+          "weight": 100,
+          "evidence": "0xbad0000000000000000000000000000000c0ffee — Golpe de falso suporte (demo) (fonte: demo)",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 100,
+      "patterns": [
+        "Falso suporte",
+        "Falsa plataforma de investimento"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 1 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "padrões conhecidos (RAG): Falso suporte; Falsa plataforma de investimento"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x719de109c3ae47a12fcbf635673ec6c6c97651c7bc840f8893c44d8376e1ac34",
+    "report_hash": "0xea0dfe09737d6324c4dcb10be92633054bcab75a279381995a20d5944b5c667d",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "transfer-300-blocklist__conversa-longa": {
+    "analysis_id": "5d356c67-4617-4e06-8b96-0f7f47fef2ad",
+    "verdict": "BLOCK",
+    "risk_score": 100,
+    "explanation_ptbr": "Você está enviando 300 USDT para 0xbad0…ffee. Endereço está em lista de golpes conhecidos. A mensagem que originou a transação tem sinais de manipulação (prompt injection). Padrão conhecido: Falso suporte. Não assine.",
+    "reasons": [
+      "Endereço está em lista de golpes conhecidos.",
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 100/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Endereço está em lista de golpes conhecidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 100/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0xbad0000000000000000000000000000000c0ffee",
+      "amount": "300",
+      "amount_usd": 300.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-300"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 300 USDT para 0xbad0…ffee."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "BLOCKLISTED",
+          "weight": 100,
+          "evidence": "0xbad0000000000000000000000000000000c0ffee — Golpe de falso suporte (demo) (fonte: demo)",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “a partir de agora voce”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 100,
+      "patterns": [
+        "Falso suporte",
+        "Falsa plataforma de investimento",
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 1 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Falso suporte; Falsa plataforma de investimento; Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x719de109c3ae47a12fcbf635673ec6c6c97651c7bc840f8893c44d8376e1ac34",
+    "report_hash": "0x10615f1a702db0dce136ecd72e5a749f6cc1f03e38e0a5bebac5be3520b4dc69",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 3,
+      "judge": 0,
+      "decision": 5,
+      "explain": 0,
+      "total": 6
+    }
+  },
+  "transfer-300-amigo__sem-contexto": {
+    "analysis_id": "063e99d6-ce4a-498f-a5fc-957504c45e83",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está enviando 300 USDT para 0x3333…3333. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x3333333333333333333333333333333333333333",
+      "amount": "300",
+      "amount_usd": 300.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-300"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 300 USDT para 0x3333…3333."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x1d439f4e5b8aa5b12c0ade08444625549f1e560d1379b4e0d4069b32d86fae5e",
+    "report_hash": "0x6150c3ef1529b6e6d1075d2ec88608a8677eabfd6d03b6fb2d9be5cb1c57acc8",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "transfer-300-amigo__benigno-amigo": {
+    "analysis_id": "98969a1d-b110-4bac-acaa-20eea2ca99b2",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está enviando 300 USDT para 0x3333…3333. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x3333333333333333333333333333333333333333",
+      "amount": "300",
+      "amount_usd": 300.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-300"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 300 USDT para 0x3333…3333."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x1d439f4e5b8aa5b12c0ade08444625549f1e560d1379b4e0d4069b32d86fae5e",
+    "report_hash": "0xf2d77b00f76216da741f245d3d9a0cae14ea3a344f4306472c39c3007ea9539f",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "transfer-300-amigo__injecao-disfarcada": {
+    "analysis_id": "41bbe733-39c6-48df-a481-d58df87c0cfd",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está enviando 300 USDT para 0x3333…3333. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x3333333333333333333333333333333333333333",
+      "amount": "300",
+      "amount_usd": 300.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-300"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 300 USDT para 0x3333…3333."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x1d439f4e5b8aa5b12c0ade08444625549f1e560d1379b4e0d4069b32d86fae5e",
+    "report_hash": "0xf2d77b00f76216da741f245d3d9a0cae14ea3a344f4306472c39c3007ea9539f",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "transfer-1500-amigo__sem-contexto": {
+    "analysis_id": "d6f6cc2f-f239-449d-9aee-df8b10e3ef2d",
+    "verdict": "ALLOW",
+    "risk_score": 15,
+    "explanation_ptbr": "Você está enviando 1.500 USDT para 0x3333…3333. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x3333333333333333333333333333333333333333",
+      "amount": "1.500",
+      "amount_usd": 1500.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-1.500"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 1.500 USDT para 0x3333…3333."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "HIGH_VALUE",
+          "weight": 15,
+          "evidence": "valor estimado US$ 1.500",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 15,
+      "patterns": [
+        "Transferência alta para destino novo",
+        "Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "padrões conhecidos (RAG): Transferência alta para destino novo; Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x369986d6f2df6b81d15a238f9e4612aa2f5b3bc6576f739d660a10c942aa3d7d",
+    "report_hash": "0x48cbb9b88c7725c2076f339fdc9392dfa1b1af50913f98e78947a576e6a195fc",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "transfer-6000-amigo__sem-contexto": {
+    "analysis_id": "1000b5fe-4678-46e8-98ab-de9c308fff0a",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 6.000 USDT para 0x3333…3333. Valor (US$ 6.000) acima do limite da política (US$ 5.000). Padrão conhecido: Transferência alta para destino novo. Não assine.",
+    "reasons": [
+      "Valor (US$ 6.000) acima do limite da política (US$ 5.000)."
+    ],
+    "reason_details": [
+      {
+        "text": "Valor (US$ 6.000) acima do limite da política (US$ 5.000).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x3333333333333333333333333333333333333333",
+      "amount": "6.000",
+      "amount_usd": 6000.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-6.000"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 6.000 USDT para 0x3333…3333."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "HIGH_VALUE",
+          "weight": 15,
+          "evidence": "valor estimado US$ 6.000",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 15,
+      "patterns": [
+        "Transferência alta para destino novo",
+        "Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "padrões conhecidos (RAG): Transferência alta para destino novo; Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Valor (US$ 6.000) acima do limite da política (US$ 5.000)."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0xc7f1d88639ea56ea8883a7afc22fdf4cb8344856ba1219d5ddc029334ee61600",
+    "report_hash": "0x201470ee4157b5946ec71f0e8d6b21647ed0e5436b759dba584b634fddcaf13c",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "transfer-6000-amigo__ja-aprovado": {
+    "analysis_id": "d96aae13-7f6f-4b43-be25-00733f7b1e54",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 6.000 USDT para 0x3333…3333. Valor (US$ 6.000) acima do limite da política (US$ 5.000). Padrão conhecido: Transferência alta para destino novo. Não assine.",
+    "reasons": [
+      "Valor (US$ 6.000) acima do limite da política (US$ 5.000)."
+    ],
+    "reason_details": [
+      {
+        "text": "Valor (US$ 6.000) acima do limite da política (US$ 5.000).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x3333333333333333333333333333333333333333",
+      "amount": "6.000",
+      "amount_usd": 6000.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-6.000"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 6.000 USDT para 0x3333…3333."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "HIGH_VALUE",
+          "weight": 15,
+          "evidence": "valor estimado US$ 6.000",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 15,
+      "patterns": [
+        "Transferência alta para destino novo",
+        "Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Transferência alta para destino novo; Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Valor (US$ 6.000) acima do limite da política (US$ 5.000)."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0xc7f1d88639ea56ea8883a7afc22fdf4cb8344856ba1219d5ddc029334ee61600",
+    "report_hash": "0xe3b687839ecfbd95185eb241cbc498365f461cfd2457bf90460bc4348b37f8c8",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "swap-legitimo__sem-contexto": {
+    "analysis_id": "d215e974-c1b6-4ae4-9c30-010acc9ea0f8",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "swap",
+      "function": "swapExactETHForTokens",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "ETH",
+      "spender": null,
+      "recipient": "0x4e5b2e1dc63f6b91cb6cd759936495434c7e972f",
+      "amount": "0,05",
+      "amount_usd": 150.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "ETH",
+          "symbol": "ETH",
+          "delta": "-0,05"
+        }
+      ],
+      "summary_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 4 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xc02a…6cc2 (Token WETH): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x7d14cec4c63f784f067767e5dd0b34974cae80e57694753c0bdf0aed4eb8756f",
+    "report_hash": "0xb437c736851ec219c1eab2c42cc33ee913e3c633378e3ef6fcf3fcd4ee8fcd7d",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "swap-legitimo__benigno-swap": {
+    "analysis_id": "11299894-8922-4eba-a0f9-fbb8d93e7a6d",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "swap",
+      "function": "swapExactETHForTokens",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "ETH",
+      "spender": null,
+      "recipient": "0x4e5b2e1dc63f6b91cb6cd759936495434c7e972f",
+      "amount": "0,05",
+      "amount_usd": 150.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "ETH",
+          "symbol": "ETH",
+          "delta": "-0,05"
+        }
+      ],
+      "summary_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 4 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xc02a…6cc2 (Token WETH): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x7d14cec4c63f784f067767e5dd0b34974cae80e57694753c0bdf0aed4eb8756f",
+    "report_hash": "0x52e2d03dd3b14bbe3e0d083726cc529a3fe716f6f44dc7ffb898f06e95f70cdd",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "swap-legitimo__injecao-direta": {
+    "analysis_id": "9dd45d86-6c22-400b-87c5-e1a05ff04fcb",
+    "verdict": "WARN",
+    "risk_score": 40,
+    "explanation_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router. A mensagem que originou a transação tem sinais de manipulação (prompt injection). Padrão conhecido: Prompt injection em agente com carteira. Revise com cuidado antes de assinar.",
+    "reasons": [
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "swap",
+      "function": "swapExactETHForTokens",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "ETH",
+      "spender": null,
+      "recipient": "0x4e5b2e1dc63f6b91cb6cd759936495434c7e972f",
+      "amount": "0,05",
+      "amount_usd": 150.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "ETH",
+          "symbol": "ETH",
+          "delta": "-0,05"
+        }
+      ],
+      "summary_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “ignore todas as instrucoes anterior”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 4 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xc02a…6cc2 (Token WETH): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x7d14cec4c63f784f067767e5dd0b34974cae80e57694753c0bdf0aed4eb8756f",
+    "report_hash": "0xbaf42a01e889deb869d0c83cf17f8bf0319540624f881ce4b0fb1c1a0a51dc57",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "swap-legitimo__conversa-longa": {
+    "analysis_id": "3c3eea10-c417-445e-99a1-151dd523ba38",
+    "verdict": "WARN",
+    "risk_score": 40,
+    "explanation_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router. A mensagem que originou a transação tem sinais de manipulação (prompt injection). Padrão conhecido: Prompt injection em agente com carteira. Revise com cuidado antes de assinar.",
+    "reasons": [
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "swap",
+      "function": "swapExactETHForTokens",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "ETH",
+      "spender": null,
+      "recipient": "0x4e5b2e1dc63f6b91cb6cd759936495434c7e972f",
+      "amount": "0,05",
+      "amount_usd": 150.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "ETH",
+          "symbol": "ETH",
+          "delta": "-0,05"
+        }
+      ],
+      "summary_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “a partir de agora voce”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 4 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xc02a…6cc2 (Token WETH): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x7d14cec4c63f784f067767e5dd0b34974cae80e57694753c0bdf0aed4eb8756f",
+    "report_hash": "0x596438bf0aada30073b29b25848e6cb8a82b4b5cc7f21aeb498d6a1269b69882",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 3,
+      "judge": 0,
+      "decision": 5,
+      "explain": 0,
+      "total": 5
+    }
+  },
+  "swap-simulacao-reverteu__sem-contexto": {
+    "analysis_id": "24913500-b2ce-46ec-a03c-0d06b7b4b6f0",
+    "verdict": "WARN",
+    "risk_score": 40,
+    "explanation_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router. Não foi possível simular a transação — não assine às cegas. Padrão conhecido: Token honeypot. Revise com cuidado antes de assinar.",
+    "reasons": [
+      "Não foi possível simular a transação — não assine às cegas.",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Não foi possível simular a transação — não assine às cegas.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "swap",
+      "function": "swapExactETHForTokens",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "ETH",
+      "spender": null,
+      "recipient": "0x4e5b2e1dc63f6b91cb6cd759936495434c7e972f",
+      "amount": "0,05",
+      "amount_usd": 150.0,
+      "is_unlimited": false,
+      "simulation_ok": false,
+      "balance_changes": [],
+      "summary_ptbr": "Você está trocando 0,05 ETH por USDT via Uniswap V2 Router."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "SIMULATION_FAILED",
+          "weight": 40,
+          "evidence": "a simulação reverteu (fixture)",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Token honeypot",
+        "Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "evidence": [
+        "blocklist: 4 endereço(s) consultado(s), 0 ocorrência(s)",
+        "contrato 0x7a25…488d (Uniswap V2 Router): criado há 2.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xc02a…6cc2 (Token WETH): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "padrões conhecidos (RAG): Token honeypot; Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x7d14cec4c63f784f067767e5dd0b34974cae80e57694753c0bdf0aed4eb8756f",
+    "report_hash": "0x8e52d2c9ae23890de5c6cdeb3e0d174c50a36d7780a45e27a0167e40192d8eb7",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "permit-fora-do-escopo__sem-contexto": {
+    "analysis_id": "e27ed891-9b10-4cbe-9484-0976c5e331b9",
+    "verdict": "WARN",
+    "risk_score": 40,
+    "explanation_ptbr": "Não foi possível identificar o que esta transação faz. Assinar assim é assinar às cegas. Não foi possível identificar o que a transação faz — não assine às cegas. Padrão conhecido: Phishing de assinatura Permit / Permit2. Revise com cuidado antes de assinar.",
+    "reasons": [
+      "Não foi possível identificar o que a transação faz — não assine às cegas.",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Não foi possível identificar o que a transação faz — não assine às cegas.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "unknown",
+      "function": "0xd505accf",
+      "token": null,
+      "token_symbol": null,
+      "spender": null,
+      "recipient": null,
+      "amount": null,
+      "amount_usd": null,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Não foi possível identificar o que esta transação faz. Assinar assim é assinar às cegas."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "UNKNOWN_FUNCTION",
+          "weight": 40,
+          "evidence": "função 0xd505accf não reconhecida",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Phishing de assinatura Permit / Permit2",
+        "setApprovalForAll em NFTs",
+        "Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "evidence": [
+        "blocklist: 1 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "padrões conhecidos (RAG): Phishing de assinatura Permit / Permit2; setApprovalForAll em NFTs; Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "classifier": null
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x94a574a3cb8a11f1e199190ce142e2afa1e1fa47e13b351b5fe48d16cfdfdd7f",
+    "report_hash": "0xd5591258d4018d08bbe0fc34703c12ab6593e331d664a0dfe1d747edcf92e78c",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 2,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "setapprovalforall-fora-do-escopo__golpe-airdrop": {
+    "analysis_id": "d3600d71-18e3-4510-8fc8-e1eb897ee432",
+    "verdict": "WARN",
+    "risk_score": 40,
+    "explanation_ptbr": "Não foi possível identificar o que esta transação faz. Assinar assim é assinar às cegas. Não foi possível identificar o que a transação faz — não assine às cegas. Padrão conhecido: Falso airdrop / claim. Revise com cuidado antes de assinar.",
+    "reasons": [
+      "Não foi possível identificar o que a transação faz — não assine às cegas.",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Não foi possível identificar o que a transação faz — não assine às cegas.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "unknown",
+      "function": "0xa22cb465",
+      "token": null,
+      "token_symbol": null,
+      "spender": null,
+      "recipient": null,
+      "amount": null,
+      "amount_usd": null,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [],
+      "summary_ptbr": "Não foi possível identificar o que esta transação faz. Assinar assim é assinar às cegas."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "UNKNOWN_FUNCTION",
+          "weight": 40,
+          "evidence": "função 0xa22cb465 não reconhecida",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Falso airdrop / claim",
+        "Phishing de aprovação (approval phishing)"
+      ],
+      "evidence": [
+        "blocklist: 1 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Falso airdrop / claim; Phishing de aprovação (approval phishing)"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0xe3b83d2efa4929fd1711eae8acb5b8f2cb80cdc50e88fdc6bd8d9983e4060ff5",
+    "report_hash": "0xe0714fd92067919e259613d9ad650457ca25b014bd28a7085b6943e1ef3d5be2",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "agente-25000-atacante__injecao-direta": {
+    "analysis_id": "aa407309-c5b1-4ce7-a7cf-c98aa07d5c73",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 25.000 USDT para 0x7e57…dead. Valor (US$ 25.000) acima do limite da política (US$ 100). Destino 0x7e57…dead não está na lista de permitidos. Padrão conhecido: Prompt injection em agente com carteira. Não assine.",
+    "reasons": [
+      "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+      "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 55/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 55/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x7e57a77ac4e2000000000000000000000000dead",
+      "amount": "25.000",
+      "amount_usd": 25000.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-25.000"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 25.000 USDT para 0x7e57…dead."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "HIGH_VALUE",
+          "weight": 15,
+          "evidence": "valor estimado US$ 25.000",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “ignore todas as instrucoes anterior”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 55,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+        "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x9b289abd713c86bd8dd5ceebf3c6009d4d73d91ecc6553b4186f0fb2054eefcc",
+    "report_hash": "0x6e05a3d9da4b343991114a668ad8aafb523a829c177c170d19b20f61b23c4b1c",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 5
+    }
+  },
+  "agente-25000-atacante__injecao-disfarcada": {
+    "analysis_id": "de16efb1-2c65-4ca7-9386-7c6ad094f792",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 25.000 USDT para 0x7e57…dead. Valor (US$ 25.000) acima do limite da política (US$ 100). Destino 0x7e57…dead não está na lista de permitidos. Padrão conhecido: Transferência alta para destino novo. Não assine.",
+    "reasons": [
+      "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+      "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+    ],
+    "reason_details": [
+      {
+        "text": "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x7e57a77ac4e2000000000000000000000000dead",
+      "amount": "25.000",
+      "amount_usd": 25000.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-25.000"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 25.000 USDT para 0x7e57…dead."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "HIGH_VALUE",
+          "weight": 15,
+          "evidence": "valor estimado US$ 25.000",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 15,
+      "patterns": [
+        "Transferência alta para destino novo",
+        "Prompt injection em agente com carteira",
+        "Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Transferência alta para destino novo; Prompt injection em agente com carteira; Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+        "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x9b289abd713c86bd8dd5ceebf3c6009d4d73d91ecc6553b4186f0fb2054eefcc",
+    "report_hash": "0xcd067693490ceeac4d76561a66b194f359e8022c2b61495fec76a7099e896952",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "agente-25000-atacante__ja-aprovado": {
+    "analysis_id": "3f18e460-4082-4814-99cc-aba00cf351f1",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 25.000 USDT para 0x7e57…dead. Valor (US$ 25.000) acima do limite da política (US$ 100). Destino 0x7e57…dead não está na lista de permitidos. Padrão conhecido: Transferência alta para destino novo. Não assine.",
+    "reasons": [
+      "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+      "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+    ],
+    "reason_details": [
+      {
+        "text": "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x7e57a77ac4e2000000000000000000000000dead",
+      "amount": "25.000",
+      "amount_usd": 25000.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-25.000"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 25.000 USDT para 0x7e57…dead."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "HIGH_VALUE",
+          "weight": 15,
+          "evidence": "valor estimado US$ 25.000",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 15,
+      "patterns": [
+        "Transferência alta para destino novo",
+        "Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Transferência alta para destino novo; Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+        "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x9b289abd713c86bd8dd5ceebf3c6009d4d73d91ecc6553b4186f0fb2054eefcc",
+    "report_hash": "0x747600b36a26f865d61350ba1df9a5be9d05deeecdeed997aa09831c0bb8eb9b",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "agente-25000-atacante__conversa-longa": {
+    "analysis_id": "d2d8de36-5d26-4bc8-b39d-84dcbcadf70a",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 25.000 USDT para 0x7e57…dead. Valor (US$ 25.000) acima do limite da política (US$ 100). Destino 0x7e57…dead não está na lista de permitidos. Padrão conhecido: Prompt injection em agente com carteira. Não assine.",
+    "reasons": [
+      "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+      "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 55/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 55/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x7e57a77ac4e2000000000000000000000000dead",
+      "amount": "25.000",
+      "amount_usd": 25000.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-25.000"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 25.000 USDT para 0x7e57…dead."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "HIGH_VALUE",
+          "weight": 15,
+          "evidence": "valor estimado US$ 25.000",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        },
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “a partir de agora voce”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 55,
+      "patterns": [
+        "Prompt injection em agente com carteira",
+        "Transferência alta para destino novo",
+        "Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira; Transferência alta para destino novo; Blind signing em multisig (caso Bybit/Safe)"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Valor (US$ 25.000) acima do limite da política (US$ 100).",
+        "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x9b289abd713c86bd8dd5ceebf3c6009d4d73d91ecc6553b4186f0fb2054eefcc",
+    "report_hash": "0x2ab851d5f3a84c3502b2a880abaf1f4fe3734f7471293ca4e8d6854cce3ca5d3",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 3,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 5
+    }
+  },
+  "agente-50-atacante__benigno-pagamento": {
+    "analysis_id": "2167676f-4337-4a7a-89bc-92499633c92e",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 50 USDT para 0x7e57…dead. Destino 0x7e57…dead não está na lista de permitidos. Não assine.",
+    "reasons": [
+      "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+    ],
+    "reason_details": [
+      {
+        "text": "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x7e57a77ac4e2000000000000000000000000dead",
+      "amount": "50",
+      "amount_usd": 50.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-50"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 50 USDT para 0x7e57…dead."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x37f79ed121e9f19c5eeca5a2389e23a074b2f4a17ea4bfa765b0e39b7b835874",
+    "report_hash": "0x1bd43c5ebdbcd43c660e9031a99c606006d054eef0fe1a62e81e2617d318c2e6",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "agente-50-atacante__injecao-direta": {
+    "analysis_id": "01ab7c6f-2e25-41e3-ac36-a96332d4138d",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 50 USDT para 0x7e57…dead. Destino 0x7e57…dead não está na lista de permitidos. A mensagem que originou a transação tem sinais de manipulação (prompt injection). Padrão conhecido: Prompt injection em agente com carteira. Não assine.",
+    "reasons": [
+      "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x7e57a77ac4e2000000000000000000000000dead",
+      "amount": "50",
+      "amount_usd": 50.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-50"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 50 USDT para 0x7e57…dead."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “ignore todas as instrucoes anterior”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Destino 0x7e57a77ac4e2000000000000000000000000dead não está na lista de permitidos."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0x37f79ed121e9f19c5eeca5a2389e23a074b2f4a17ea4bfa765b0e39b7b835874",
+    "report_hash": "0x306020fe27cc761d37f34bea072e6a50b6a0fe22cf91983c3f53f40105c8a2f5",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "agente-150-fornecedor__benigno-fatura": {
+    "analysis_id": "c52f4619-c9e9-46c1-9501-7eefc55c71fb",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 150 USDT para 0x5a3a…b3c4. Valor (US$ 150) acima do limite da política (US$ 100). Não assine.",
+    "reasons": [
+      "Valor (US$ 150) acima do limite da política (US$ 100)."
+    ],
+    "reason_details": [
+      {
+        "text": "Valor (US$ 150) acima do limite da política (US$ 100).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x5a3a1c2b9e4d7f60812a3b4c5d6e7f8091a2b3c4",
+      "amount": "150",
+      "amount_usd": 150.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-150"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 150 USDT para 0x5a3a…b3c4."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Valor (US$ 150) acima do limite da política (US$ 100)."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0xf8944e5b9b068290ad44f06617f1bdd93b8ac7fd349aaca62ecddd78bebc6cf0",
+    "report_hash": "0xe68b3977a8dfaa0220124a32f078424d4122e1da67dfe1f315011e82f053b158",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "agente-150-fornecedor__injecao-disfarcada": {
+    "analysis_id": "0aef7ea7-db82-4832-bc6a-d304136e698e",
+    "verdict": "BLOCK",
+    "risk_score": 70,
+    "explanation_ptbr": "Você está enviando 150 USDT para 0x5a3a…b3c4. Valor (US$ 150) acima do limite da política (US$ 100). Padrão conhecido: Prompt injection em agente com carteira. Não assine.",
+    "reasons": [
+      "Valor (US$ 150) acima do limite da política (US$ 100)."
+    ],
+    "reason_details": [
+      {
+        "text": "Valor (US$ 150) acima do limite da política (US$ 100).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x5a3a1c2b9e4d7f60812a3b4c5d6e7f8091a2b3c4",
+      "amount": "150",
+      "amount_usd": 150.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-150"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 150 USDT para 0x5a3a…b3c4."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": false,
+      "violations": [
+        "Valor (US$ 150) acima do limite da política (US$ 100)."
+      ],
+      "warnings": []
+    },
+    "intent_hash": "0xf8944e5b9b068290ad44f06617f1bdd93b8ac7fd349aaca62ecddd78bebc6cf0",
+    "report_hash": "0x80ea33306ed2947b2a0af36ed0356376c0f1258a5e04576097995d24050a9ea8",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 5
+    }
+  },
+  "agente-50-fornecedor__benigno-pagamento": {
+    "analysis_id": "22d26816-9c12-4be7-95e0-f48e7686e61d",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x5a3a1c2b9e4d7f60812a3b4c5d6e7f8091a2b3c4",
+      "amount": "50",
+      "amount_usd": 50.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-50"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x0d03ba95a92a62fe7f4e9b0ff2ab25b195f0204270008fcf36bd7209d239c0b8",
+    "report_hash": "0x0f3060a1fdb3e2d0a89a65be7cc9d96fea6f6c9b3730ca5b9fd536d5a29d628c",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "agente-50-fornecedor__benigno-fatura": {
+    "analysis_id": "66145e85-6cf6-42c5-99ce-6a1d16d771ff",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x5a3a1c2b9e4d7f60812a3b4c5d6e7f8091a2b3c4",
+      "amount": "50",
+      "amount_usd": 50.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-50"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x0d03ba95a92a62fe7f4e9b0ff2ab25b195f0204270008fcf36bd7209d239c0b8",
+    "report_hash": "0x0f3060a1fdb3e2d0a89a65be7cc9d96fea6f6c9b3730ca5b9fd536d5a29d628c",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "agente-50-fornecedor__injecao-direta-curta": {
+    "analysis_id": "daa97d6a-19ec-49db-838b-c10bb5a91841",
+    "verdict": "WARN",
+    "risk_score": 40,
+    "explanation_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4. A mensagem que originou a transação tem sinais de manipulação (prompt injection). Padrão conhecido: Prompt injection em agente com carteira. Revise com cuidado antes de assinar.",
+    "reasons": [
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x5a3a1c2b9e4d7f60812a3b4c5d6e7f8091a2b3c4",
+      "amount": "50",
+      "amount_usd": 50.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-50"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “ignore as instrucoes anterior”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x0d03ba95a92a62fe7f4e9b0ff2ab25b195f0204270008fcf36bd7209d239c0b8",
+    "report_hash": "0x9d0767c57698dffb1b4f8ea0a8452ed9765e275d27e261776e62765cf196e468",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 1,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 3
+    }
+  },
+  "agente-50-fornecedor__injecao-disfarcada": {
+    "analysis_id": "3d1181c9-9cdd-426f-8a0e-4ba14d3f6aed",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x5a3a1c2b9e4d7f60812a3b4c5d6e7f8091a2b3c4",
+      "amount": "50",
+      "amount_usd": 50.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-50"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x0d03ba95a92a62fe7f4e9b0ff2ab25b195f0204270008fcf36bd7209d239c0b8",
+    "report_hash": "0xab8b7ff8ec0f9f55f66efdd2ff0a4e1d1f08bbdfba390f699b20a6ba4290fd1e",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 5
+    }
+  },
+  "agente-50-fornecedor__ja-aprovado": {
+    "analysis_id": "9515890a-05d3-45a7-bb0c-05220e3dda76",
+    "verdict": "ALLOW",
+    "risk_score": 0,
+    "explanation_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4. Pode assinar.",
+    "reasons": [],
+    "reason_details": [],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x5a3a1c2b9e4d7f60812a3b4c5d6e7f8091a2b3c4",
+      "amount": "50",
+      "amount_usd": 50.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-50"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4."
+    },
+    "threat": {
+      "signals": [],
+      "risk_score": 0,
+      "patterns": [],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x0d03ba95a92a62fe7f4e9b0ff2ab25b195f0204270008fcf36bd7209d239c0b8",
+    "report_hash": "0x0f3060a1fdb3e2d0a89a65be7cc9d96fea6f6c9b3730ca5b9fd536d5a29d628c",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 3,
+      "explain": 0,
+      "total": 4
+    }
+  },
+  "agente-50-fornecedor__conversa-longa": {
+    "analysis_id": "dce12250-49cc-4316-b683-f96a0dda95b3",
+    "verdict": "WARN",
+    "risk_score": 40,
+    "explanation_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4. A mensagem que originou a transação tem sinais de manipulação (prompt injection). Padrão conhecido: Prompt injection em agente com carteira. Revise com cuidado antes de assinar.",
+    "reasons": [
+      "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+      "Sinais de risco somam 40/100."
+    ],
+    "reason_details": [
+      {
+        "text": "A mensagem que originou a transação tem sinais de manipulação (prompt injection).",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      },
+      {
+        "text": "Sinais de risco somam 40/100.",
+        "sources": [
+          "rule"
+        ],
+        "probability": null
+      }
+    ],
+    "decoded": {
+      "action": "transfer",
+      "function": "transfer",
+      "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "token_symbol": "USDT",
+      "spender": null,
+      "recipient": "0x5a3a1c2b9e4d7f60812a3b4c5d6e7f8091a2b3c4",
+      "amount": "50",
+      "amount_usd": 50.0,
+      "is_unlimited": false,
+      "simulation_ok": true,
+      "balance_changes": [
+        {
+          "token": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "symbol": "USDT",
+          "delta": "-50"
+        }
+      ],
+      "summary_ptbr": "Você está enviando 50 USDT para 0x5a3a…b3c4."
+    },
+    "threat": {
+      "signals": [
+        {
+          "code": "PROMPT_INJECTION",
+          "weight": 40,
+          "evidence": "o contexto contém instruções típicas de manipulação de agente: “a partir de agora voce”",
+          "sources": [
+            "rule"
+          ],
+          "probability": null
+        }
+      ],
+      "risk_score": 40,
+      "patterns": [
+        "Prompt injection em agente com carteira"
+      ],
+      "evidence": [
+        "blocklist: 2 endereço(s) consultado(s), 0 ocorrência(s)",
+        "simulação: executa sem reverter (mudanças de saldo: estimativa do calldata)",
+        "contrato 0xdac1…1ec7 (Token USDT): criado há 3.000 dias, código verificado (fonte: fixture)",
+        "classificador Jev: desligado (sem chave ou OFFLINE); contexto checado só por regex",
+        "padrões conhecidos (RAG): Prompt injection em agente com carteira"
+      ],
+      "classifier": {
+        "provider": "jev",
+        "model": "jev-1.14.0",
+        "status": "off",
+        "thresholds": {
+          "injection": 0.8,
+          "intent": 0.7
+        },
+        "injection_p": null,
+        "intent": null,
+        "intent_confidence": null,
+        "intent_probabilities": null,
+        "error": null
+      }
+    },
+    "policy": {
+      "allowed": true,
+      "violations": [],
+      "warnings": []
+    },
+    "intent_hash": "0x0d03ba95a92a62fe7f4e9b0ff2ab25b195f0204270008fcf36bd7209d239c0b8",
+    "report_hash": "0x90a8a7c0709abc40619ca9d5dffffd89de08f18d22772dd1519704f4055225d5",
+    "llm_used": false,
+    "timings_ms": {
+      "decoder": 0,
+      "policy": 0,
+      "threat": 2,
+      "judge": 0,
+      "decision": 4,
+      "explain": 0,
+      "total": 5
+    }
+  }
+}

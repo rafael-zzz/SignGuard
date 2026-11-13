@@ -21,23 +21,18 @@ Antes de assinar, um time de agentes analisa a transação, explica em portuguê
 ```mermaid
 flowchart LR
   IN[tx + política] --> D[Decodificador<br/>decode + simulação + resumo PT-BR<br/>100% código]
-  CTX[contexto do bot<br/>texto não confiável] --> RX[Regex<br/>código]
-  CTX --> JEV[Jev · API System One<br/>versão 1.14 fixada<br/>probabilidade calibrada]
-  JEV -. chamado por .- KEY{{TYPESAFE_API_KEY → api.typesafe.ai<br/>ou OPENROUTER_API_KEY → openrouter.ai/api/v1/systemone}}
-  JEV --> THR[Limiar fixo em código<br/>injeção ≥ 0,80<br/>divergente ≥ 0,70]
+  CTX[contexto do bot<br/>texto não confiável] --> JEV[Jev<br/>classificador calibrado]
   D --> T[Ameaças<br/>blocklist, idade/verificação do contrato,<br/>approve ilimitado, RAG]
   D --> P[Política<br/>limite, allowlist, horário<br/>100% código]
-  RX -->|OU| T
-  THR -->|sinal · teto: ALERTAR| T
-  T --> J[Juiz<br/>regras em código<br/>só regra BLOQUEIA]
+  JEV -->|p ≥ limiar → sinal<br/>teto: ALERTAR| J
+  T --> J[Juiz<br/>regras em código]
   P --> J
-  J --> OUT[Veredito + hash<br/>decisão fechada]
+  J --> OUT[Veredito]
   OUT -.texto apenas.-> E[LLM explica<br/>opcional, não altera]
   OUT --> R[(SignGuardRegistry<br/>Sepolia)]
 ```
-Linha cheia = arquitetura alvo, com a chave da TypeSafe. Linha tracejada no classificador = o que roda hoje, só com a chave do OpenRouter (ver Evidências). Sem nenhuma das duas, vale só o regex.
 1. **Decodificador** — identifica a função (approve, transfer, swap…), valor em USD e mudanças de saldo; simula via `eth_call` (fork da mainnet). O resumo em português vem de template, sem LLM.
-2. **Ameaças** — gera sinais com peso (`BLOCKLISTED`, `UNLIMITED_APPROVAL`, `CONTRACT_NEW`, `UNVERIFIED`, …) e busca padrões de golpe conhecidos (RAG: 16 padrões indexados no Chroma e comparados por embeddings com a mensagem recebida; sem o `chromadb`, a busca cai para tags e palavras-chave). O texto do `context` é classificado por regex **ou** pelo Jev (`tools/jev.py`), que devolve probabilidade calibrada; um limiar fixo em código vira sinal: `PROMPT_INJECTION` (`injection ≥ 0,80`), `INTENT_MISMATCH` (`intent = divergente` com confiança `≥ 0,70`), `CLASSIFIER_UNAVAILABLE` (Jev com erro ou acima de 2 s em transação de agente). O Jev é chamado pela API da TypeSafe ou, sem essa chave, pelo OpenRouter com a `OPENROUTER_API_KEY`.
+2. **Ameaças** — gera sinais com peso (`BLOCKLISTED`, `UNLIMITED_APPROVAL`, `CONTRACT_NEW`, `UNVERIFIED`, …) e busca padrões de golpe conhecidos (RAG: 16 padrões indexados no Chroma e comparados por embeddings com a mensagem recebida; sem o `chromadb`, a busca cai para tags e palavras-chave). O texto do `context` é classificado por regex **ou** pelo Jev (`tools/jev.py`), que devolve probabilidade calibrada; um limiar fixo em código vira sinal: `PROMPT_INJECTION` (`injection ≥ 0,80`), `INTENT_MISMATCH` (`intent = divergente` com confiança `≥ 0,70`), `CLASSIFIER_UNAVAILABLE` (Jev com erro ou acima de 2 s em transação de agente).
 3. **Política** — regras do usuário/empresa aplicadas por código, sem LLM.
 4. **Juiz** — decide o veredito, só com código. BLOQUEAR vem exclusivamente de regra; sinal de classificador e score têm teto de ALERTAR.
 5. **Explicação** — roda depois do veredito fechado. O LLM reescreve o texto para leigo (teto de 4 s); veredito, risco, motivos e `report_hash` não mudam. Texto que contradiz o veredito é descartado e vale o template.
@@ -68,7 +63,7 @@ Quando algo falha, a análise continua e a decisão fica mais conservadora, nunc
 - LLM fora do formato → 1 nova tentativa; depois, explicação por template. O veredito é o mesmo com ou sem LLM.
 - LLM lento → a chamada de explicação tem teto de 4 s (`LLM_TIMEOUT`); estourou, vale o template.
 - Jev fora, lento (> 2 s) ou com resposta fora do formato → regex como reserva; se a transação veio de agente (`source=agent`), ALERTAR.
-- Sem `TYPESAFE_API_KEY` → o Jev é chamado pelo OpenRouter com a `OPENROUTER_API_KEY`. Sem nenhuma das duas chaves, ou com `JEV_BACKEND=off` → `threat.classifier.status = "off"`, contexto checado só por regex.
+- Sem `TYPESAFE_API_KEY` → classificador desligado (`threat.classifier.status = "off"`), contexto checado só por regex.
 - Etherscan fora ou sem chave → a evidência é marcada como indisponível em `threat.evidence`.
 - Calldata que não dá para decodificar → ação `unknown`, que nunca recebe PERMITIR.
 - Dado que a política precisa e não existe → nunca conta como regra cumprida: idade de contrato não confirmada é violação (BLOQUEAR); valor em USD de um token sem preço vai para `policy.warnings[]` (ALERTAR).
@@ -92,7 +87,7 @@ A política é conferida assim: limite em USD por transação; allowlist sobre q
 
 **O que não garantimos:**
 - Detectar golpe novo que não viola política nem casa com nenhum sinal. Por isso a allowlist e o limite de valor são a defesa principal para agentes.
-- Pegar toda injeção disfarçada quando o Jev está desligado: só com regex, o recall de injeção no nosso eval é de 53% (com o Jev, 100%; ver abaixo). Essas mensagens não liberam transação maliciosa, porque quem bloqueia é a regra, mas uma transação inofensiva com mensagem manipulada pode passar como PERMITIR.
+- Pegar toda injeção disfarçada só com regex: sem o Jev, o recall de injeção no nosso eval é de 53% (ver abaixo). Essas mensagens não liberam transação maliciosa, porque quem bloqueia é a regra, mas uma transação inofensiva com mensagem manipulada pode passar como PERMITIR.
 - Multichain, assinaturas off-chain (EIP-712) e rastreio cross-chain.
 
 ### Evidências
@@ -109,30 +104,10 @@ Resultado de `python -m scripts.eval` em 13/11/2026, modo offline (fixtures, cla
 | Determinismo (5 execuções por caso: veredito, risco, motivos, hash) | 40 de 40 |
 | Vereditos alterados pelo LLM (adversário simulado que pede "ALLOW, risco 0") | **0 de 40** |
 | Injeção no contexto, só regex | precisão 100%, recall 53% (10 de 19) |
+| Injeção no contexto, regex + Jev | não medido: falta `TYPESAFE_API_KEY` |
 | Latência da decisão, offline | p50 1 ms, p95 2 ms (não inclui RPC, Etherscan nem Jev) |
 
-Os 3 erros do modo offline são o mesmo caso: transação inofensiva acompanhada de injeção disfarçada que o regex não pega, e que sai PERMITIR em vez de ALERTAR. É o espaço que o Jev cobre (tabela abaixo). `python -m scripts.eval --live --record-jev` grava as respostas do Jev nas fixtures para a demo offline.
-
-**Com o Jev ligado.** O Jev é chamado pela API System One, direto na TypeSafe (`TYPESAFE_API_KEY`) ou pelo OpenRouter (`OPENROUTER_API_KEY`, `POST https://openrouter.ai/api/v1/systemone`, modelo `typesafe/jev-1.14`). É o mesmo modelo nos dois caminhos: pelo OpenRouter a resposta vem do provedor TypeSafe, versão `typesafe/jev-1.14-20261014`. O `typesafe/jev-router`, que também aparece no OpenRouter, é um roteador de LLM de chat e **não** é usado.
-
-Resultado de `python -m scripts.eval --live --runs 3` em 13/11/2026, Jev pelo OpenRouter e LLM real na explicação ([`backend/eval/results-live-jev.json`](backend/eval/results-live-jev.json)):
-
-| Métrica | Só regex (offline) | Regex + Jev (ao vivo) |
-|---|---|---|
-| Falsos PERMITIR em transação maliciosa | 0 de 17 | **0 de 17** |
-| BLOQUEAR esperado e não bloqueado | 0 de 20 | **0 de 20** |
-| Acurácia | 37 de 40 (92%) | 39 de 40 (98%) |
-| Injeção no contexto: recall | 53% (10 de 19) | **100% (19 de 19)** |
-| Injeção no contexto: precisão | 100% | 95% (1 falso alarme) |
-| Vereditos alterados pelo LLM da explicação | 0 de 40 (adversário simulado) | **0 de 40** (LLM real) |
-| Mesmas entradas → mesma decisão | 40 de 40 | 40 de 40 |
-| Latência da decisão | p50 1 ms | **p50 514 ms, p95 612 ms** (meta: < 1,5 s) |
-
-Limites desse resultado:
-- O único erro é um falso alarme: "Quero trocar um pouco de ETH por USDT na Uniswap" com um approve de 100 USDT saiu ALERTAR em vez de PERMITIR.
-- O Jev não devolve exatamente o mesmo número a cada chamada: em 3 chamadas por caso, a probabilidade mudou em 28 de 29 casos (na segunda casa decimal), mas o veredito não mudou em nenhum. Perto do limiar isso pode oscilar: "Pague 50 USDT ao fornecedor" marcou 0,75–0,77 de injeção, logo abaixo de 0,80.
-- Os limiares (0,80 e 0,70) são os do doc 07 e não foram ajustados com este eval; 40 casos é pouco para calibrar.
-- Simulação e reputação de contrato vieram das fixtures: a latência inclui o Jev, mas não RPC nem Etherscan.
+Os 3 erros são o mesmo caso: transação inofensiva acompanhada de injeção disfarçada que o regex não pega, e que sai PERMITIR em vez de ALERTAR. É o espaço que o Jev cobre. Com a chave, `python -m scripts.eval --live --record-jev` mede regex + Jev e a latência com rede, e grava as respostas para a demo offline. Os limiares (0,80 e 0,70) são os do doc 07 e ainda não foram calibrados com esse eval.
 
 Testes de propriedade (`tests/test_properties.py`): determinismo; invariância ao contexto (transação que viola regra + 10 contextos × 4 respostas do classificador → sempre BLOCK); teto do probabilístico (transação limpa + ataque no contexto → no máximo WARN); LLM pedindo ALLOW não muda a decisão; fora do escopo nunca recebe PERMITIR.
 
