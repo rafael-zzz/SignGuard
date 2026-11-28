@@ -1,6 +1,7 @@
 // Cliente da API. Com NEXT_PUBLIC_USE_MOCKS=1 o front funciona sem backend (mocks/mock-data.json).
 import mock from "@/mocks/mock-data.json";
-import type { AttestResponse, ForensicReport, Policy, Scenario, TxInput, Verdict } from "./types";
+import { buildTx, missingReply, parseIntent, templateReply } from "./agent";
+import type { AgentChatResponse, AttestResponse, ForensicReport, Policy, Scenario, TxInput, Verdict } from "./types";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "1";
@@ -48,6 +49,21 @@ export async function analyzeTx(tx: TxInput): Promise<Verdict> {
     return mocks.verdicts["approve-golpe"];
   }
   return req<Verdict>("/analyze", { method: "POST", body: JSON.stringify(tx) });
+}
+
+export async function agentChat(message: string): Promise<AgentChatResponse> {
+  if (USE_MOCKS) {
+    // Sem backend: simula o agente localmente (lib/agent.ts espelha backend/demo/wallet_bot.py)
+    const intent = parseIntent(message);
+    const { to, symbol: token } = intent;
+    const question = missingReply(intent);
+    if (question) return { to, token, amount: null, tx: null, verdict: null, signed: false, reply: question };
+    const tx = buildTx(intent, message);
+    const verdict = await analyzeTx(tx);
+    const signed = verdict.verdict === "ALLOW";
+    return { to, token, amount: intent.amount, tx, verdict, signed, reply: templateReply(intent, verdict, signed) };
+  }
+  return req<AgentChatResponse>("/agent/chat", { method: "POST", body: JSON.stringify({ message }) });
 }
 
 export async function attest(analysisId: string): Promise<AttestResponse> {

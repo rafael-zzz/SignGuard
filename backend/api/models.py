@@ -126,6 +126,22 @@ class Verdict(BaseModel):
     timings_ms: dict[str, int] = {}  # por nó + "jev", "decision" (até o veredito) e "total"
 
 
+class AgentChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)   # texto recebido pelo agente -> não confiável
+
+
+class AgentChatResponse(BaseModel):
+    """O agente montou `tx` a partir da mensagem; `signed` só é True com veredito ALLOW (may_sign).
+    Sem valor ou sem moeda na mensagem não há transação: amount, tx e verdict vêm None e o agente pergunta."""
+    to: str
+    token: str | None          # símbolo da moeda (USDT, USDC, ETH…); None = a mensagem não disse
+    amount: str | None         # na unidade de `token`, decimal em string
+    tx: dict | None
+    reply: str                 # fala do agente: pergunta o valor, ou o resultado após o SignGuard (LLM ou template)
+    verdict: Verdict | None
+    signed: bool
+
+
 class ForensicRequest(BaseModel):
     tx_hash: str = Field(pattern=r"^0x[0-9a-fA-F]{64}$")
 
