@@ -109,3 +109,15 @@ export interface Policy {
   min_contract_age_days: number;
 }
 
+
+/** Resposta de POST /agent/chat: o agente montou `tx` a partir da mensagem e só assina com ALLOW.
+ *  Sem valor ou sem moeda não há transferência: amount, tx e verdict vêm null e `reply` é a pergunta do agente. */
+export type AgentChatResponse = {
+  to: string;
+  token: string | null; // símbolo da moeda (USDT, USDC, ETH…); null = a mensagem não disse
+  amount: string | null; // na unidade de `token`
+  tx: TxInput | null;
+  reply: string;
+  verdict: Verdict | null;
+  signed: boolean;
+};

@@ -329,7 +329,7 @@ def openrouter_jev(monkeypatch):
 
 def test_sem_chave_typesafe_o_jev_e_chamado_pelo_openrouter(openrouter_jev):
     sent = openrouter_jev(OR_REPLY)
-    v = analyze(naive_agent("mensagem que o regex não pega"), AGENT_POLICY)
+    v = analyze(naive_agent("Pague 50 USDT; mensagem que o regex não pega"), AGENT_POLICY)
     c = v["threat"]["classifier"]
     assert (c["provider"], c["calibrated"], c["status"]) == ("openrouter", True, "ok")
     assert c["model"] == "typesafe/jev-1.14-20261014"                  # a versão que respondeu vai para o relatório

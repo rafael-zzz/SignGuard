@@ -12,12 +12,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from agents import llm
 from agents.forensic import investigate
 from agents.graph import analyze, latency_stats
+from demo import wallet_bot
 from tools import jev
 from . import attest as attest_mod
 from . import db
 from .auth import Owner, require_owner, demo_enabled
 from .config import FIXTURES_DIR, OFFLINE
-from .models import AttestRequest, AttestResponse, ForensicReport, ForensicRequest, TxInput, Verdict, PolicyInput
+from .models import AgentChatRequest, AgentChatResponse, AttestRequest, AttestResponse, ForensicReport, ForensicRequest, TxInput, Verdict, PolicyInput
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -84,6 +85,22 @@ def analyze_scenario(scenario_id: str, owner: Owner):
     if not fx:
         raise HTTPException(404, "cenário não encontrado")
     return analyze_tx(TxInput.model_validate(fx["tx"]), owner, scenario_id)
+
+
+@app.post("/agent/chat", response_model=AgentChatResponse)
+def agent_chat(req: AgentChatRequest, owner: Owner):
+    """Agente-carteira da demo: obedece a mensagem, monta a transação e consulta o SignGuard antes de assinar.
+    Sem valor ou sem moeda não é transferência: o agente pergunta antes de montar tx ou acionar os agentes."""
+    require_owner("agent-wallet", owner)
+    intent = wallet_bot.parse_intent(req.message)
+    if (question := wallet_bot.missing_reply(intent)):
+        return AgentChatResponse(to=intent.to, token=intent.symbol, amount=None, tx=None, verdict=None,
+                                 signed=False, reply=question)
+    tx = wallet_bot.build_tx(intent, req.message)
+    verdict = analyze_tx(TxInput.model_validate(tx), owner)
+    signed = wallet_bot.may_sign(verdict)
+    return AgentChatResponse(to=intent.to, token=intent.symbol, amount=str(intent.amount), tx=tx, verdict=verdict,
+                             signed=signed, reply=wallet_bot.agent_reply(req.message, intent, verdict, signed))
 
 
 @app.get("/analyses")

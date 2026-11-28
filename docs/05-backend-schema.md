@@ -11,6 +11,7 @@
 | GET | `/analyses` | Histórico |
 | GET/PUT | `/policies/{owner}` | Lê/atualiza política |
 | POST | `/forensic` | Relatório pós-incidente (mock) |
+| POST | `/agent/chat` | Agente-carteira da demo: monta a transferência (qualquer moeda de `tools/decode.TOKENS` ou ETH) e consulta o SignGuard. Sem valor ou moeda, só pergunta: `tx`/`verdict` = null e nada roda no grafo |
 | GET | `/health` | Status, classificador (`classifier.enabled`) e `latency_ms` da decisão (última, p50, p95) |
 
 ## 2. Modelos (Pydantic)
